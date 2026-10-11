@@ -20,25 +20,44 @@
   .panel--jurassic-fossils .jurassic-copy h2 { font-size: clamp(40px, 4.2vw, 58px); line-height: 1.03; }
   .panel--jurassic-fossils .jurassic-copy .scene-prose p { font-size: clamp(14px, 1vw, 16px); line-height: 1.46; margin-bottom: 8px; }
 
-  .jurassic-copy--specimen-skeleton,
-  .jurassic-copy--specimen-bridge { top: 6vh; width: min(700px, 50vw); }
-  .panel--jurassic-diplodocus-skeleton .jurassic-copy h2,
-  .panel--jurassic-diplodocus-bridge .jurassic-copy h2 { max-width: 16ch; font-size: clamp(40px, 4vw, 58px); line-height: 1.03; }
-  .panel--jurassic-diplodocus-skeleton .jurassic-copy .scene-prose p,
-  .panel--jurassic-diplodocus-bridge .jurassic-copy .scene-prose p { font-size: clamp(14px, .95vw, 16px); line-height: 1.42; margin-bottom: 6px; }
-
-  /* Cena 20 (esqueleto): caixa original, à direita do bloco de texto mais longo. */
-  .jurassic-pair-stage { left: 40vw; top: 56vh; width: min(35vw, 700px); }
-  /* Cenas 21 e 22 compartilham a mesma caixa (a passagem do esqueleto à reconstrução não muda
-     de lugar). Ela ganha presença sob o texto curto e termina antes da coluna de dados, que por
-     sua vez termina antes da régua do tempo. */
+  /* Diplodocus, cenas 20 a 22: o animal é o foco e ocupa uma única caixa, do esqueleto à
+     reconstrução completa. Ela se posiciona por left/top/width (sem transform): site.js usa o
+     transform inline desta caixa na transferência para a cena 23. */
+  .panel--jurassic-diplodocus-skeleton,
+  .panel--jurassic-diplodocus-bridge,
+  .panel--jurassic-diplodocus {
+    --dipl-w: min(52vw, 96vh);
+    --dipl-left: 31vw;
+    /* 0,4432 = altura / largura da imagem; os pés ficam sempre a 9vh da borda inferior */
+    --dipl-top: calc(100vh - var(--dipl-w) * .4432 - 9vh);
+  }
+  .panel--jurassic-diplodocus-skeleton .jurassic-pair-stage,
   .panel--jurassic-diplodocus-bridge .jurassic-pair-stage,
-  .panel--jurassic-diplodocus .jurassic-pair-stage { left: 15vw; top: 58vh; width: min(46vw, 70vh); }
+  .panel--jurassic-diplodocus .jurassic-pair-stage { left: var(--dipl-left); top: var(--dipl-top); width: var(--dipl-w); }
 
-  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .scene-prose { left: 0; top: 23vh; width: min(31vw, 460px); }
+  /* Cenas 20 e 21: um único bloco de texto no alto, à direita; o animal, abaixo dele, mantém a mesma caixa. */
+  .jurassic-copy--specimen-skeleton,
+  .jurassic-copy--specimen-bridge { left: auto; right: 12vw; top: 6vh; width: min(700px, 44vw); }
+  .panel--jurassic-diplodocus-skeleton .jurassic-copy h2,
+  .panel--jurassic-diplodocus-bridge .jurassic-copy h2 { max-width: none; font-size: clamp(36px, 3.4vw, 54px); line-height: 1.03; }
+  .panel.panel--jurassic-diplodocus-skeleton .jurassic-copy .scene-prose,
+  .panel.panel--jurassic-diplodocus-bridge .jurassic-copy .scene-prose { max-width: none; margin-top: 16px; }
+
+  /* Cena 22: título, texto à esquerda e dados à direita são secundários ao animal. */
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus { left: 0; width: 100vw; }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus h2 { top: 6.5vh; left: 0; right: 0; margin-inline: auto; font-size: clamp(44px, 3.9vw, 72px); }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .eyebrow { left: 8.2vw; top: calc(14vh - 34px); }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .scene-prose { left: 8.2vw; top: 14vh; width: clamp(300px, 20.5vw, 400px); }
   .panel--jurassic-diplodocus .jurassic-copy--diplodocus .jurassic-support { max-width: 30ch; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.25; }
   .panel--jurassic-diplodocus .jurassic-copy--diplodocus .scene-prose p:not(.jurassic-support) { max-width: 48ch; margin-top: 7px; font-size: clamp(13px, .9vw, 15px); line-height: 1.4; }
-  .panel--jurassic-diplodocus .jurassic-specimen-facts { right: 12vw; top: 24vh; width: 20.8vw; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts { right: 12vw; top: 14vh; width: clamp(290px, 16.5vw, 330px); grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts > section { padding: 14px 18px; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts dl > div { padding: 7px 0; }
+  .panel--jurassic-diplodocus .jurassic-specimen-word { left: calc(var(--dipl-left) - 2vw); top: calc(var(--dipl-top) + 4vh); font-size: clamp(100px, 11vw, 190px); }
+
+  /* Cena 23: um único bloco de texto à direita; o Diplodocus, que olha para a esquerda, ocupa a faixa abaixo e à esquerda dele. */
+  .panel--jurassic-comparison .jurassic-copy--comparison { left: auto; right: 12vw; top: 6vh; width: min(570px, 40vw); }
+  .panel.panel--jurassic-comparison .jurassic-copy--comparison .scene-prose { max-width: none !important; }
 
   .panel--jurassic-end .jurassic-copy--end { left: 10vw; top: 13vh; width: min(1060px, 74vw); }
   .panel--jurassic-end .jurassic-copy h2 { font-size: clamp(48px, 5.4vw, 82px); line-height: 1.02; }
@@ -47,6 +66,40 @@
 }
 
 @media (min-width: 1051px) and (max-height: 820px) {
+  .panel--jurassic-diplodocus-skeleton,
+  .panel--jurassic-diplodocus-bridge,
+  .panel--jurassic-diplodocus {
+    --dipl-w: min(48vw, 88vh);
+    --dipl-left: 34vw;
+    --dipl-top: calc(100vh - var(--dipl-w) * .4432 - 6vh);
+  }
+  /* Cenas 20, 21 e 23 em telas baixas: o bloco de texto fica mais compacto e termina antes do animal. */
+  .jurassic-copy--specimen-skeleton,
+  .jurassic-copy--specimen-bridge,
+  .panel--jurassic-comparison .jurassic-copy--comparison { top: 7vh; }
+  .panel--jurassic-diplodocus-skeleton .jurassic-copy .eyebrow,
+  .panel--jurassic-diplodocus-bridge .jurassic-copy .eyebrow,
+  .panel--jurassic-comparison .jurassic-copy .eyebrow { margin-bottom: 10px; }
+  .panel.panel--jurassic-diplodocus-skeleton .jurassic-copy .scene-prose p,
+  .panel.panel--jurassic-diplodocus-bridge .jurassic-copy .scene-prose p,
+  .panel.panel--jurassic-comparison .jurassic-copy .scene-prose p { margin-bottom: 5px; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts { gap: 8px; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts > section { padding: 11px 16px; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts dl > div { padding: 5px 0; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts dd { font-size: 17px; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts small { font-size: 12.5px; }
+  /* Cena 14: o bloco único cabe em telas baixas. */
+  .panel--boundary-end .copy-center h2 { font-size: clamp(42px, 4.4vw, 56px); margin-bottom: 1vh; }
+  .panel--boundary-end .copy-center > .scene-prose p { font-size: 15px; line-height: 1.5; margin-top: 4px; }
+  .panel--boundary-end .end-stop { margin-top: 12px; }
+  .panel--boundary-end .end-stop p:first-child { font-size: 22px; }
+  .panel--boundary-end .end-stop p:last-child { margin-top: 4px; font-size: 15px; }
+  .panel--boundary-end .restart-journey { margin-top: 6px; }
+  /* Explorador, etapa Informações: a coluna de cartões cabe entre o título e os controles */
+  .specimen-explorer__context { gap: 10px; }
+  .specimen-explorer .specimen-explorer__context-card { padding: 12px 16px; }
+  .specimen-explorer .specimen-explorer__information dl > div { padding: 6px 0; }
+  .specimen-explorer .specimen-explorer__information dd { font-size: 16px; }
   .panel--eoraptor-reconstruction .eoraptor-detail-layout { grid-template-rows: 15vh 1fr; }
   .panel--eoraptor-reconstruction .eoraptor-facts-column .eoraptor-panel-label { margin-bottom: 9px; }
   .panel--eoraptor-reconstruction .eoraptor-facts-column .eoraptor-support { margin-bottom: 10px; font-size: 15px; line-height: 1.24; }

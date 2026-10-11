@@ -30,13 +30,20 @@
 .panel--jurassic-rift { background: radial-gradient(circle at 66% 46%,#263b31 0%,#17271f 44%,#101914 84%); }
 .jurassic-rift-map { position: absolute; z-index: 1; right: 2.5%; top: 11%; width: 68vw; height: 74vh; filter: drop-shadow(0 20px 60px rgba(4,12,8,.35)); }
 .jurassic-rift-map .jurassic-land { fill: #566f5d; stroke: #b5c2ad; stroke-width: 1.2; transition: transform 1.6s cubic-bezier(.2,.7,.2,1); }
-.jurassic-rift-map .jurassic-contour { fill: none; stroke: rgba(221,233,210,.22); stroke-width: 1; }
+.jurassic-rift-map .jurassic-contour { fill: none; stroke-width: 1; }
+@media (max-width: 1050px) { .jurassic-rift-map .jurassic-contour { stroke: rgba(221,233,210,.22); } } /* curvas de nível decorativas: só abaixo do desktop */
 .jurassic-rift-map .jurassic-rift-seam { fill: none; stroke: #a6cbb6; stroke-width: 2; stroke-dasharray: 3 10; opacity: .78; }
 .panel--jurassic-rift.is-active .jurassic-land--west { transform: translate(-23px, 9px); }
 .panel--jurassic-rift.is-active .jurassic-land--east { transform: translate(28px, -5px); }
 .panel--jurassic-rift::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; background: linear-gradient(90deg,#101914 0%,rgba(16,25,20,.92) 27%,rgba(16,25,20,.22) 68%,transparent 100%); }
 .jurassic-copy--rift { left: 8.2vw; bottom: 15vh; width: min(640px, 46vw); }
 .panel--jurassic-rift .jurassic-visual-note { bottom: 6vh; }
+/* Desktop: o esquema à esquerda e o texto à direita, alternando com as cenas vizinhas. */
+@media (min-width: 1051px) {
+  .jurassic-rift-map { left: 0; right: auto; width: 62vw; }
+  .panel--jurassic-rift::after { background: linear-gradient(270deg,#101914 0%,rgba(16,25,20,.92) 27%,rgba(16,25,20,.22) 68%,transparent 100%); }
+  .jurassic-copy--rift { left: auto; right: 12vw; width: min(31vw, 560px); }
+}
 
 /* Paisagem conceitual: imagem ampla, texto em área realmente escura. */
 .panel--jurassic-landscape { background: #243026; }
@@ -62,10 +69,17 @@
 .jurassic-fossil-photo figcaption { position: absolute; z-index: 2; left: 8.2vw; bottom: 7vh; max-width: 40vw; color: rgba(236,236,227,.82); font-size: 13px; }
 .jurassic-copy--fossils { right: 12.5vw; top: 24vh; width: min(590px, 41vw); }
 .panel--jurassic-fossils .jurassic-copy h2 { font-size: clamp(52px, 5.6vw, 80px); }
+/* Desktop, cena 19: a parede de fósseis à direita e o texto à esquerda (a cena 18 tem a foto à esquerda). */
+@media (min-width: 1051px) {
+  .jurassic-fossil-photo { inset: 0 0 0 36%; }
+  .jurassic-fossil-photo::after { background: linear-gradient(270deg,rgba(25,25,22,.08) 35%,rgba(36,35,31,.58) 70%,#24231f 99%),linear-gradient(0deg,rgba(18,18,16,.62),transparent 34%); }
+  .jurassic-fossil-photo figcaption { left: auto; right: 12vw; max-width: 28vw; text-align: right; }
+  .jurassic-copy--fossils { right: auto; left: 8.2vw; }
+}
 
 /* Espécime em uma página própria; os dados acompanham a imagem sem cartões. */
 .panel--jurassic-diplodocus,.panel--jurassic-comparison { background: #1a1e1a; }
-.jurassic-specimen-word { position: absolute; z-index: 0; top: 34vh; left: 6vw; color: rgba(236,236,227,.055); font: 800 clamp(100px, 15vw, 240px)/1 "Manrope",Arial,sans-serif; letter-spacing: -.09em; white-space: nowrap; pointer-events: none; }
+.jurassic-specimen-word { position: absolute; z-index: 0; top: 34vh; left: 6vw; color: rgba(236,236,227,.04); font: 800 clamp(100px, 15vw, 240px)/1 "Manrope",Arial,sans-serif; letter-spacing: -.09em; white-space: nowrap; pointer-events: none; }
 .jurassic-copy--diplodocus { left: 8.2vw; top: 13vh; width: min(940px, 72vw); }
 .panel--jurassic-diplodocus .jurassic-copy h2 { font-size: clamp(58px, 6.5vw, 100px); }
 .panel--jurassic-diplodocus .jurassic-copy h2 span { color: #b5baaf; font-weight: 450; }

@@ -125,6 +125,28 @@ html.is-opening .video-pause:not([hidden]) { display: inline-flex; }
 }
 .start-journey span, .video-play span { color: inherit; }
 .start-journey:hover, .video-play:hover { background: var(--ocre-hi); color: var(--basalto); }
+/* Desktop: "Iniciar expedição" — osso sólido, texto quase preto, sem borda, glow ou gradiente. */
+@media (min-width: 1051px) {
+  .start-journey {
+    justify-content: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 0 32px;
+    border: 0;
+    border-radius: 22px;
+    background: #F3F0E8;
+    color: #0A0A0A;
+    font: 600 16px/1 "Manrope", var(--sans);
+    letter-spacing: 0;
+    text-align: center;
+    box-shadow: none;
+    transition: background .2s ease, transform .2s ease;
+  }
+  .start-journey > span:not(.start-letters) { display: none; }
+  .start-letters > span { display: inline-block; white-space: pre; }
+  .start-journey:hover { background: #FFFFFF; color: #0A0A0A; transform: translateY(-1px); }
+  .start-journey:focus-visible { outline: 2px solid #F3F0E8; outline-offset: 4px; border-radius: 22px; }
+}
 .opening-foot { color: var(--pedra); }
 
 /* ---------- Régua do tempo: coluna de rocha discreta ---------- */
@@ -160,21 +182,26 @@ html.is-opening .video-pause:not([hidden]) { display: inline-flex; }
   display: inline-block;
   margin-right: 10px;
   padding-right: 12px;
-  border-right: 1px solid rgba(237, 231, 216, .5);
   color: var(--osso);
   font-weight: 600;
 }
+/* O traço divisor entre o rótulo e a legenda só permanece abaixo do desktop. */
+@media (max-width: 1050px) {
+  .site-photo span::before { border-right: 1px solid rgba(237, 231, 216, .5); }
+}
 .panel--site-present .site-copy .eyebrow { color: var(--osso); }
 
-/* ---------- Marcador de reconstrução (cenas 12 e 22, legenda de reconstrução) ---------- */
-.specimen-disclaimer::before,
-.jurassic-visual-note::before {
-  content: "";
-  display: inline-block;
-  width: 22px;
-  margin-right: 10px;
-  vertical-align: middle;
-  border-top: 2px dashed var(--ocre-hi);
+/* ---------- Marcador tracejado das legendas de reconstrução: removido em desktop (o texto já diz "reconstrução") ---------- */
+@media (max-width: 1050px) {
+  .specimen-disclaimer::before,
+  .jurassic-visual-note::before {
+    content: "";
+    display: inline-block;
+    width: 22px;
+    margin-right: 10px;
+    vertical-align: middle;
+    border-top: 2px dashed var(--ocre-hi);
+  }
 }
 
 /* ---------- Cena 12 · Eoraptor ---------- */
@@ -205,36 +232,22 @@ html.is-opening .video-pause:not([hidden]) { display: inline-flex; }
 /* ---------- Legendas e rótulos: nunca abaixo de 12 px ---------- */
 .image-caption, .map-stamp, .scale-note, .jurassic-pair-note, .jurassic-visual-note, .specimen-disclaimer { font-size: max(12px, .8125rem); }
 
-/* ---------- Cenas 6, 7 e 8: leitura (diagnóstico da Etapa 2) ---------- */
+/* ---------- Cenas 5, 6 e 7: leitura sobre a imagem ---------- */
 @media (min-width: 1051px) {
-  /* Cena 7: título antes da prosa (a ordem do DOM), em coluna única */
-  .panel--forest .panel-copy {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: clamp(16px, 3vh, 28px);
-    padding: 0 0 0 8.2vw;
-  }
-  .panel--forest .panel-copy h2,
-  .panel--forest .panel-copy .scene-prose { position: static; width: auto; bottom: auto; top: auto; left: auto; }
-  .panel--forest .panel-copy h2 { max-width: 13ch; font-size: clamp(44px, 4.8vw, 66px); }
-  .panel--forest .panel-copy .scene-prose { width: min(36vw, 540px); }
-  .panel--forest .panel-copy .image-caption { left: 8.2vw; }
-  /* Cena 6: véu local atrás do título, sem caixa */
-  .panel--water .panel-shade {
-    background:
-      radial-gradient(ellipse 34% 26% at 72% 24%, rgba(7, 15, 13, .62), transparent 100%),
-      linear-gradient(90deg, rgba(7, 15, 13, .76), transparent 52%),
-      linear-gradient(0deg, rgba(7, 15, 13, .55), transparent 48%);
-  }
   .panel--water .panel-copy h2 { text-shadow: 0 2px 26px rgba(5, 10, 8, .7); }
 }
 .dino-fossil-visual figcaption,
 .panel--dinosaurs .dino-fossil-visual figcaption {
   color: var(--osso);
   font-size: 13px;
-  text-shadow: 0 1px 12px rgba(8, 11, 9, .9);
-  background: linear-gradient(0deg, rgba(8, 11, 9, .72), transparent);
+}
+/* Em desktop a legenda fica abaixo da fotografia; a sombra e o fundo só valem quando ela se sobrepõe à imagem. */
+@media (max-width: 1050px) {
+  .dino-fossil-visual figcaption,
+  .panel--dinosaurs .dino-fossil-visual figcaption {
+    text-shadow: 0 1px 12px rgba(8, 11, 9, .9);
+    background: linear-gradient(0deg, rgba(8, 11, 9, .72), transparent);
+  }
 }
 
 /* Convite do explorador: título de grupo (texto de interface, não editorial) */
@@ -262,12 +275,12 @@ html.is-opening .video-pause:not([hidden]) { display: inline-flex; }
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2px;
   }
+  /* Cena 22: o convite acompanha a largura da coluna de dados, fora do corpo do animal */
+  .panel--jurassic-diplodocus .specimen-choices { width: clamp(270px, 16.5vw, 330px); }
   .specimen-choice { flex-direction: column; justify-content: flex-start; text-align: center; gap: 4px; padding: 4px 2px; border-radius: 12px; min-height: 88px; }
   .specimen-choice__thumb { flex: 0 0 52px; width: 66px !important; height: 52px !important; }
   .specimen-choice__name { text-align: center; }
   .specimen-choice__name small { display: none; }
-  /* Cena 22: o rótulo de contexto fica acima do texto, sem cruzá-lo */
-  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .eyebrow { top: calc(23vh - 34px); }
 }
 
 /* ==========================================================================

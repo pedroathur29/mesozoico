@@ -185,6 +185,7 @@
     const next = Math.max(0, Math.min(N - 1, index));
     if (next === activeIndex) return;
     activeIndex = next;
+    if (activeIndex === 0) resetStartButton();
     root.classList.toggle("is-opening", activeIndex === 0);
     panels.forEach((item, itemIndex) => {
       const current = itemIndex === activeIndex;
@@ -206,9 +207,75 @@
   /* ------------------------------------------------------------------ */
   /* Controles que não dependem do modo de animação                      */
   /* ------------------------------------------------------------------ */
-  document.querySelectorAll("[data-next]").forEach((button) => {
+  document.querySelectorAll("[data-next]:not(.start-journey)").forEach((button) => {
     button.addEventListener("click", () => goToPanel(activeIndex + 1));
   });
+
+  // "Iniciar expedição": microanimação das letras no hover e resposta física no clique (desktop).
+  // O clique só chama goToPanel (a transição já existente) depois da resposta, e uma única vez.
+  const startButton = document.querySelector(".start-journey");
+  let startLaunched = false;
+  let startAnimations = [];
+  const startLetters = [];
+  const isDesktopStart = () => window.innerWidth > 1050;
+  if (startButton) {
+    const label = startButton.firstChild;
+    if (label && label.nodeType === Node.TEXT_NODE && label.textContent.trim()) {
+      const text = label.textContent.trim();
+      startButton.setAttribute("aria-label", text);
+      const wrap = document.createElement("span");
+      wrap.className = "start-letters";
+      wrap.setAttribute("aria-hidden", "true");
+      Array.from(text).forEach((char) => {
+        if (char === " ") { wrap.appendChild(document.createTextNode(" ")); return; }
+        const letter = document.createElement("span");
+        letter.textContent = char;
+        wrap.appendChild(letter);
+        startLetters.push(letter);
+      });
+      label.replaceWith(wrap);
+    }
+    let waving = false;
+    startButton.addEventListener("pointerenter", () => {
+      if (waving || startLaunched || reducedMotion.matches || !isDesktopStart()) return;
+      waving = true;
+      const waves = startLetters.map((letter, i) => letter.animate(
+        [{ transform: "translateY(0)", opacity: 1 }, { transform: "translateY(-3px)", opacity: 0.78, offset: 0.45 }, { transform: "translateY(0)", opacity: 1 }],
+        { duration: 200, delay: i * 7, easing: "ease-in-out" }
+      ));
+      Promise.all(waves.map((wave) => wave.finished)).then(() => { waving = false; }).catch(() => { waving = false; });
+    });
+    startButton.addEventListener("click", () => {
+      if (startLaunched) return;
+      startLaunched = true;
+      const go = () => goToPanel(activeIndex + 1);
+      if (!isDesktopStart()) { startLaunched = false; go(); return; }
+      if (reducedMotion.matches) {
+        const fade = startButton.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: "linear", fill: "forwards" });
+        startAnimations.push(fade);
+        fade.finished.then(go).catch(go);
+        return;
+      }
+      const press = startButton.animate(
+        [{ scale: 1 }, { scale: 0.97, offset: 0.25 }, { scale: 1.015, offset: 0.62 }, { scale: 1 }],
+        { duration: 520, easing: "cubic-bezier(.3,0,.2,1)" }
+      );
+      startAnimations.push(press);
+      startLetters.forEach((letter, i) => startAnimations.push(letter.animate(
+        [{ transform: "translateY(0)", opacity: 1 }, { transform: "translateY(-6px)", opacity: 0 }],
+        { duration: 260, delay: 80 + i * 6, easing: "ease-out", fill: "forwards" }
+      )));
+      startAnimations.push(startButton.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, delay: 340, easing: "ease-in", fill: "forwards" }));
+      press.finished.then(go).catch(go);
+    });
+  }
+  // Ao voltar à abertura, o botão reaparece intacto.
+  function resetStartButton() {
+    if (!startLaunched) return;
+    startAnimations.forEach((animation) => animation.cancel());
+    startAnimations = [];
+    startLaunched = false;
+  }
   document.querySelector("[data-go-start]")?.addEventListener("click", () => goToPanel(0));
 
   document.querySelectorAll("[data-open-credits]").forEach((button) => button.addEventListener("click", () => dialog?.showModal()));
@@ -284,7 +351,7 @@
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     window.scrollTo(0, 0);
 
-    // Camadas auxiliares: véu (profundidade) e linha de borda (limite geológico).
+    // Camada auxiliar: véu de profundidade que escurece a cena que recua.
     const veils = panels.map((panel) => {
       const veil = document.createElement("div");
       veil.className = "panel-veil";
@@ -292,13 +359,6 @@
       panel.appendChild(veil);
       return veil;
     });
-    function makeEdge(panel, axis, side, limit) {
-      const edge = document.createElement("i");
-      edge.className = `panel-edge panel-edge--${axis} panel-edge--${side}${limit ? " panel-edge--limit" : ""}`;
-      edge.setAttribute("aria-hidden", "true");
-      panel.appendChild(edge);
-      return edge;
-    }
 
     const master = gsap.timeline({ paused: true, defaults: { ease: "none", immediateRender: false } });
     masterAnimation = master;
@@ -351,11 +411,6 @@
       textIn(c.i + 1, c.i, text);
     }
 
-    function edgePulse(edge, at, peak) {
-      fromTo(edge, { opacity: 0 }, { opacity: peak }, at + PLATE_START, 0.16 * PD);
-      fromTo(edge, { opacity: peak }, { opacity: 0 }, at + PLATE_START + 0.84 * PD, 0.16 * PD);
-    }
-
     // Cortina: a cena atual sobe e sai; a próxima aparece por baixo, um pouco mais devagar.
     function lift(c) {
       const epoch = c.Q.querySelector(".epoch-photo");
@@ -364,7 +419,6 @@
       fromTo(c.Q, { yPercent: 14 }, { immediateRender: true, yPercent: 0 }, c.i + PLATE_START, PD);
       fromTo(c.pv, { opacity: 0 }, { opacity: 0.32 }, c.i + PLATE_START, PD);
       fromTo(c.nv, { opacity: 0.5 }, { opacity: 0 }, c.i + PLATE_START, PD);
-      edgePulse(makeEdge(c.P, "h", "bottom", c.limit), c.i, c.limit ? 0.95 : 0.5);
       textOut(c.i, c.i);
       enter(c, { y: 44 });
     }
@@ -373,7 +427,6 @@
       fromTo(c.Q, { xPercent: 100 }, { immediateRender: true, xPercent: 0 }, c.i + PLATE_START, PD);
       fromTo(c.P, { xPercent: 0 }, { xPercent: -16 }, c.i + PLATE_START, PD);
       fromTo(c.pv, { opacity: 0 }, { opacity: 0.6 }, c.i + PLATE_START, PD);
-      edgePulse(makeEdge(c.Q, "v", "left", c.limit), c.i, 0.5);
       textOut(c.i, c.i);
       enter(c, { x: 70 });
     }
@@ -381,12 +434,6 @@
     function openSides(c) {
       fromTo(c.Q, { clipPath: "inset(0% 50% 0% 50%)" }, { immediateRender: true, clipPath: FULL }, c.i + PLATE_START, PD);
       fromTo(c.pv, { opacity: 0 }, { opacity: 0.55 }, c.i + PLATE_START, PD);
-      const left = makeEdge(c.Q, "v", "left", false);
-      const right = makeEdge(c.Q, "v", "right", false);
-      fromTo(left, { left: "50%" }, { left: "0%" }, c.i + PLATE_START, PD);
-      fromTo(right, { right: "50%" }, { right: "0%" }, c.i + PLATE_START, PD);
-      edgePulse(left, c.i, 0.45);
-      edgePulse(right, c.i, 0.45);
       textOut(c.i, c.i);
       enter(c, { y: 36 });
     }
@@ -395,9 +442,6 @@
       fromTo(c.Q, { clipPath: "inset(100% 0% 0% 0%)" }, { immediateRender: true, clipPath: FULL }, c.i + PLATE_START, PD);
       fromTo(c.P, { yPercent: 0 }, { yPercent: -14 }, c.i + PLATE_START, PD);
       fromTo(c.pv, { opacity: 0 }, { opacity: 0.5 }, c.i + PLATE_START, PD);
-      const top = makeEdge(c.Q, "h", "top", false);
-      fromTo(top, { top: "100%" }, { top: "0%" }, c.i + PLATE_START, PD);
-      edgePulse(top, c.i, 0.45);
       textOut(c.i, c.i);
       enter(c, { y: 40 });
     }
@@ -407,7 +451,6 @@
       fromTo(c.Q, { xPercent: 14 }, { immediateRender: true, xPercent: 0 }, c.i + PLATE_START, PD);
       fromTo(c.pv, { opacity: 0 }, { opacity: 0.3 }, c.i + PLATE_START, PD);
       fromTo(c.nv, { opacity: 0.5 }, { opacity: 0 }, c.i + PLATE_START, PD);
-      edgePulse(makeEdge(c.P, "v", "right", false), c.i, 0.5);
       textOut(c.i, c.i);
       enter(c, { x: 60 });
     }
@@ -431,12 +474,6 @@
       }
       fromTo(c.Q, { clipPath: "inset(50% 0% 50% 0%)" }, { immediateRender: true, clipPath: FULL }, c.i + PLATE_START, PD);
       fromTo(c.pv, { opacity: 0 }, { opacity: 0.5 }, c.i + PLATE_START, PD);
-      const top = makeEdge(c.Q, "h", "top", false);
-      const bottom = makeEdge(c.Q, "h", "bottom", false);
-      fromTo(top, { top: "50%" }, { top: "0%" }, c.i + PLATE_START, PD);
-      fromTo(bottom, { bottom: "50%" }, { bottom: "0%" }, c.i + PLATE_START, PD);
-      edgePulse(top, c.i, 0.45);
-      edgePulse(bottom, c.i, 0.45);
       textOut(c.i, c.i);
       enter(c, { y: 30 });
     }
@@ -619,14 +656,14 @@
       textOut(c.i, c.i);
       fromTo(c.P.querySelectorAll('.jurassic-specimen-facts, .jurassic-visual-note'),
         { opacity: 1, y: 0 }, { opacity: 0, y: -12, ease: 'power1.in' }, c.i + .02, .20);
-      fromTo(jurassicTransfer, { p: 0 }, { p: 1, ease: 'power2.inOut', onUpdate: applyJurassicTransfer }, c.i + .30, .42);
+      fromTo(jurassicTransfer, { p: 0 }, { p: 1, ease: 'power1.inOut', onUpdate: applyJurassicTransfer }, c.i + .34, .54);
       textIn(c.i + 1, c.i, { from: .83, dur: .14 });
     }
 
     // Uma assinatura de movimento por passagem. "cover": a próxima cena fica por cima.
     const TRANSITIONS = [
       { run: lift, cover: false },                                // opening → Ischigualasto today
-      { run: c => lift({ ...c, limit: true }), cover: false },   // present → Triassic boundary
+      { run: lift, cover: false },   // present → Triassic boundary
       { run: slab, cover: true },                                // recovery → the single map
       { run: openSides, cover: true },                           // map → arid terrain
       { run: riseUp, cover: true },                              // arid terrain → water
@@ -637,7 +674,7 @@
       { run: skeletonToBridge, cover: true },                    // skeleton → reflection on reconstruction
       { run: specimenWipe, cover: false },                       // visible-area specimen wipe
       { run: specimenToScale, cover: false },                    // same animal moves to human scale
-      { run: c => lift({ ...c, limit: true }), cover: false },   // scale → Triassic boundary
+      { run: lift, cover: false },   // scale → Triassic boundary
       { run: lift, cover: false },                               // Triassic → Jurassic
       { run: slab, cover: true },                                // opening → rifting
       { run: openVertical, cover: true },                        // rifting → Morrison landscape
@@ -957,7 +994,7 @@
         panel.querySelectorAll("*").forEach(el => el.removeAttribute("style"));
         panel.style.removeProperty("visibility");
         panel.style.removeProperty("z-index");
-        panel.querySelectorAll(".panel-veil, .panel-edge").forEach((layer) => layer.remove());
+        panel.querySelectorAll(".panel-veil").forEach((layer) => layer.remove());
       });
       enhanced = false;
       enableStatic();

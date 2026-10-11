@@ -1,9 +1,17 @@
 (function () {
   'use strict';
   const geometry = window.MESOZOICO_3D;
+  // A versão vai no endereço: um navegador com cópia antiga (ou com uma resposta de erro em cache) refaz o pedido.
+  const VERSION = '20261009-r2';
+  function load(image, src) {
+    const url = new URL(src, document.baseURI);
+    url.searchParams.set('v', VERSION);
+    image.onerror = () => console.error('MESOZOICO: a imagem não carregou:', url.href);
+    image.src = url.href;
+  }
   function crop(image, src, sw, sh, rect, clip) {
     const [x,y,w,h] = rect;
-    image.src = new URL(src, document.baseURI).href;
+    load(image, src);
     Object.assign(image.style, {
       position:'absolute', width:`${sw/w*100}%`, height:`${sh/h*100}%`,
       left:`${-x/w*100}%`, top:`${-y/h*100}%`, bottom:'auto', right:'auto',
@@ -29,7 +37,7 @@
   }
   // Miniatura das fichas: arquivo pequeno (≈ 15 KB) em vez do recorte da imagem grande.
   function thumb(image, id) {
-    image.src = new URL(`assets/images/3d/thumbs/${id}.webp`, document.baseURI).href;
+    load(image, `assets/images/3d/thumbs/${id}.webp`);
     image.decoding = 'async';
     Object.assign(image.style, { position:'absolute', inset:'0', width:'100%', height:'100%', objectFit:'contain', maxWidth:'none', transform:'none', clipPath:'none' });
   }

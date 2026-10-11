@@ -398,15 +398,6 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
 
 /* Camadas auxiliares das transições (criadas pelo JavaScript). */
 .panel-veil { position: absolute; inset: 0; z-index: 8; background: #060a08; opacity: 0; pointer-events: none; }
-.panel-edge { position: absolute; z-index: 9; background: var(--ochre); opacity: 0; pointer-events: none; box-shadow: 0 0 14px rgba(212, 166, 106, .28); }
-.panel-edge--h { right: 0; left: 0; height: 1px; }
-.panel-edge--v { top: 0; bottom: 0; width: 1px; }
-.panel-edge--limit.panel-edge--h { height: 2px; }
-.panel-edge--limit.panel-edge--v { width: 2px; }
-.panel-edge--bottom { bottom: 0; top: auto; }
-.panel-edge--right { right: 0; left: auto; }
-.panel-edge--left { left: 0; right: auto; }
-.panel-edge--top { top: 0; bottom: auto; }
 
 @media (max-width: 700px) {
   .time-rail__band { display: none; }
@@ -505,6 +496,12 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
 
 .eoraptor-skeleton-copy,
 .eoraptor-bridge-copy { position: absolute; z-index: 4; top: 11vh; left: 6vw; right: auto; width: min(40vw,570px); text-align: left; }
+/* Cena 11: o texto passa para a direita, fora da cauda do esqueleto; a cena 12 devolve o texto à esquerda e põe os dados à direita. */
+@media (min-width: 1051px) {
+  .eoraptor-bridge-copy { left: auto; right: 12vw; width: min(22vw, 430px); }
+  .panel--eoraptor-bridge .eoraptor-bridge-copy h2 { font-size: clamp(32px, 3vw, 50px); }
+  .panel--eoraptor-bridge .eoraptor-bridge-copy .scene-prose p { font-size: clamp(15px, 1.1vw, 18px); margin-top: 12px; }
+}
 .eoraptor-skeleton-copy { width: min(22vw,320px); }
 .eoraptor-skeleton-copy h2,
 .eoraptor-bridge-copy h2 { font-size: clamp(39px,4vw,57px); line-height: 1.05; }
@@ -653,6 +650,7 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
     background: linear-gradient(0deg, rgba(8, 13, 11, .78), rgba(8, 13, 11, .26) 31%, transparent 64%),
                 linear-gradient(90deg, rgba(8, 13, 11, .22), transparent 62%);
   }
+  /* Cenas ambientais: um bloco único (título + prosa) ancorado no espaço negativo de cada imagem. */
   .panel--landscape .copy-bottom,
   .panel--water .panel-copy,
   .panel--forest .panel-copy {
@@ -661,20 +659,13 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
     width: auto;
     max-width: none;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(12px, 2vh, 22px);
   }
-  .panel--landscape .copy-bottom h2 {
-    position: absolute;
-    top: 16vh;
-    left: 8.2vw;
-    width: 57vw;
-    font-size: clamp(53px, 5.45vw, 78px);
-  }
-  .panel--landscape .copy-bottom .scene-prose {
-    position: absolute;
-    bottom: 10vh;
-    left: 8.2vw;
-    width: 42vw;
-  }
+  .panel--landscape .copy-bottom { justify-content: flex-end; padding: 0 0 12vh 8.2vw; }
+  .panel--landscape .copy-bottom h2 { width: 57vw; font-size: clamp(53px, 5.45vw, 78px); }
+  .panel--landscape .copy-bottom .scene-prose { width: min(39vw, 590px); }
   .panel--landscape .copy-bottom .image-caption,
   .panel--water .panel-copy .image-caption,
   .panel--forest .panel-copy .image-caption {
@@ -691,73 +682,56 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
                 linear-gradient(90deg, rgba(7, 15, 13, .76), transparent 52%),
                 linear-gradient(0deg, rgba(7, 15, 13, .46), transparent 45%);
   }
-  .panel--water .panel-copy h2 {
-    position: absolute;
-    top: 15vh;
-    left: 54vw;
-    width: 33vw;
-    font-size: clamp(43px, 4.55vw, 64px);
-  }
-  .panel--water .panel-copy .scene-prose {
-    position: absolute;
-    bottom: 10vh;
-    left: 8.2vw;
-    width: 40vw;
-  }
+  .panel--water .panel-copy { justify-content: center; }
+  .panel--water .panel-copy h2,
+  .panel--water .panel-copy .scene-prose { width: min(31vw, 560px); margin-right: 12vw; margin-left: auto; }
+  .panel--water .panel-copy h2 { font-size: clamp(43px, 4.55vw, 64px); }
   .panel--forest .full-bleed { filter: saturate(.96) brightness(.95); }
   .panel--forest .panel-shade {
     background: linear-gradient(90deg, rgba(6, 14, 10, .82), rgba(6, 14, 10, .26) 45%, transparent 70%),
                 linear-gradient(0deg, rgba(6, 14, 10, .56), transparent 45%);
   }
-  .panel--forest .panel-copy .scene-prose {
-    position: absolute;
-    top: 18vh;
-    left: 8.2vw;
-    width: 39vw;
-  }
-  .panel--forest .panel-copy h2 {
-    position: absolute;
-    bottom: 13vh;
-    left: 8.2vw;
-    width: 45vw;
-    font-size: clamp(50px, 5.15vw, 72px);
-  }
+  .panel--forest .panel-copy { justify-content: center; gap: clamp(16px, 3vh, 28px); padding-left: 8.2vw; }
+  .panel--forest .panel-copy h2 { width: 45vw; font-size: clamp(44px, 4.8vw, 66px); }
+  .panel--forest .panel-copy .scene-prose { width: min(36vw, 540px); }
 
   .panel--dinosaurs { display: block; padding: 0; background: #201a15; }
+  /* Cena 8: a fotografia à esquerda, com a legenda abaixo dela; o texto à direita. */
   .panel--dinosaurs .dino-fossil-visual {
     position: absolute;
     top: 14vh;
-    left: 39vw;
-    width: 52vw;
-    height: 72vh;
+    left: 5vw;
+    width: 49vw;
+    height: 70vh;
     max-width: none;
     margin: 0;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 100%);
-    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 100%);
+    display: flex;
+    flex-direction: column;
+    -webkit-mask-image: linear-gradient(270deg, transparent, #000 9%, #000 100%);
+    mask-image: linear-gradient(270deg, transparent, #000 9%, #000 100%);
   }
   .panel--dinosaurs .dino-fossil-visual img {
     display: block;
     width: 100%;
-    height: 100%;
+    flex: 1 1 0;
+    min-height: 0;
     max-height: none;
     object-fit: cover;
-    object-position: 50% center;
-    filter: saturate(.95);
+    object-position: 52% center;
+    filter: saturate(1.02) brightness(1.04);
   }
   .panel--dinosaurs .dino-fossil-visual figcaption {
-    position: absolute;
-    right: 0;
-    bottom: 1.5vh;
-    left: 16%;
-    margin: 0;
-    text-shadow: 0 2px 12px #100d0a;
+    flex: none;
+    margin: 14px 9% 0 3%;
+    font-size: 13px;
+    line-height: 1.5;
   }
   .panel--dinosaurs .panel-copy {
     position: absolute;
     z-index: 3;
-    top: 18vh;
-    left: 8.2vw;
-    width: 43vw;
+    top: 17vh;
+    left: 57vw;
+    width: min(31vw, 580px);
     max-width: 580px;
     padding: 0;
   }
@@ -796,41 +770,36 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
   }
   .panel--boundary-end .copy-center {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
-    gap: 1.2vh 5vw;
-    width: min(1030px, 75vw);
+    gap: 1.2vh 0;
+    width: min(680px, 38vw);
     max-width: none;
+    justify-self: end;
+    margin-right: 1vw;
     padding: 0;
     text-align: left;
   }
   .panel--boundary-end .copy-center .eyebrow {
-    grid-column: 1 / -1;
     justify-content: flex-start;
     margin: 0 0 1vh;
     font-size: clamp(20px, 1.65vw, 24px);
   }
   .panel--boundary-end .copy-center h2 {
-    grid-column: 1 / -1;
     max-width: 950px;
-    margin-bottom: 3vh;
+    margin-bottom: 1.6vh;
     font-size: clamp(54px, 5.1vw, 74px);
   }
-  .panel--boundary-end .copy-center > .scene-prose { grid-column: 1; grid-row: 3 / 6; }
   .panel--boundary-end .copy-center > .scene-prose p { max-width: 51ch; margin: 7px 0 0; }
-  .panel--boundary-end .end-stop {
-    grid-column: 2;
-    grid-row: 3;
-    margin: 7px 0 0;
-  }
+  .panel--boundary-end .end-stop { margin: 22px 0 0; }
   .panel--boundary-end .end-stop p:first-child {
     margin: 0;
     font: 600 clamp(28px, 2.6vw, 38px)/1.13 var(--display);
     letter-spacing: -.04em;
   }
   .panel--boundary-end .end-stop p:last-child { margin-top: 13px; font-size: 16px; }
-  .panel--boundary-end .restart-journey { grid-column: 2; grid-row: 4; margin: 14px 0 0; }
-  .panel--boundary-end .credits-trigger--end { grid-column: 2; grid-row: 5; margin: 0; }
+  .panel--boundary-end .restart-journey { margin: 14px 0 0; }
+  .panel--boundary-end .credits-trigger--end { margin: 0; }
 }
 
 @media (min-width: 1051px) {
@@ -959,13 +928,8 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
      separate zones instead of a stack of interchangeable cards. */
   .panel--landscape .full-bleed { filter: saturate(1.08) brightness(.94); }
   .panel--landscape .copy-bottom h2 {
-    top: 15vh;
     max-width: 9ch;
     line-height: 1.02;
-  }
-  .panel--landscape .copy-bottom .scene-prose {
-    width: min(39vw, 590px);
-    bottom: 11vh;
   }
   .panel--landscape .copy-bottom .image-caption,
   .panel--water .panel-copy .image-caption,
@@ -975,47 +939,22 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
   }
   .panel--water .full-bleed { filter: saturate(1.05) brightness(1); }
   .panel--water .panel-shade {
-    background: linear-gradient(90deg, rgba(7,15,13,.72), transparent 48%),
+    background: linear-gradient(270deg, rgba(7,15,13,.78), rgba(7,15,13,.42) 36%, transparent 62%),
                 linear-gradient(0deg, rgba(7,15,13,.5), transparent 45%);
   }
-  .panel--water .panel-copy h2 {
-    top: 14vh;
-    left: 55vw;
-    width: 32vw;
-    line-height: 1.02;
-  }
-  .panel--water .panel-copy .scene-prose {
-    bottom: 11vh;
-    width: min(38vw, 560px);
-  }
+  .panel--water .panel-copy h2 { line-height: 1.02; }
   .panel--forest .full-bleed { filter: saturate(1.04) brightness(.98); }
   .panel--forest .panel-shade {
     background: linear-gradient(90deg, rgba(6,14,10,.78), rgba(6,14,10,.18) 46%, transparent 72%),
                 linear-gradient(0deg, rgba(6,14,10,.52), transparent 46%);
   }
-  .panel--forest .panel-copy .scene-prose { width: min(36vw, 540px); }
   .panel--forest .panel-copy h2 {
-    max-width: 10ch;
+    max-width: 13ch;
     line-height: 1.02;
   }
 
   /* Fossils read as physical evidence: retain the large photograph, remove the
      harsh cutout edge, and let the next scene carry the close-up. */
-  .panel--dinosaurs .dino-fossil-visual {
-    left: 43vw;
-    width: 49vw;
-    height: 68vh;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 100%);
-    mask-image: linear-gradient(90deg, transparent, #000 9%, #000 100%);
-  }
-  .panel--dinosaurs .dino-fossil-visual img {
-    object-position: 52% center;
-    filter: saturate(1.02) brightness(1.04);
-  }
-  .panel--dinosaurs .panel-copy {
-    top: 17vh;
-    width: 40vw;
-  }
   .panel--dinosaurs .panel-copy h2 {
     max-width: 10ch;
     line-height: 1.02;
@@ -1024,13 +963,6 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
     max-width: 40ch;
     font-size: clamp(15px, 1.08vw, 17px);
     line-height: 1.58;
-  }
-  .panel--dinosaurs .dino-fossil-visual figcaption {
-    left: 10%;
-    right: 3%;
-    bottom: 2vh;
-    font-size: 15px;
-    line-height: 1.5;
   }
 
   .panel--fossil .fossil-closeup img {
@@ -1049,7 +981,6 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
                 radial-gradient(ellipse at 16% 85%, rgba(37,55,43,.32), transparent 48%),
                 #131a16;
   }
-  .panel--boundary-end .copy-center { width: min(1080px, 76vw); }
   .panel--boundary-end .copy-center h2 {
     max-width: 13ch;
     font-size: clamp(56px, 5.35vw, 78px);
@@ -1178,7 +1109,10 @@ html.is-story-enhanced { scroll-behavior: auto; overscroll-behavior-y: none; }
 .panel--eoraptor-reconstruction .eoraptor-facts-column .science-note {
   margin-top: 28px;
   padding-top: 12px;
-  border-top: 1px solid rgba(232, 229, 219, .22);
+}
+/* O filete acima da nota (decorativo) só permanece abaixo do desktop. */
+@media (max-width: 1050px) {
+  .panel--eoraptor-reconstruction .eoraptor-facts-column .science-note { border-top: 1px solid rgba(232, 229, 219, .22); }
 }
 .panel--eoraptor-reconstruction .specimen-stage--wipe { z-index: 1; }
 .panel--eoraptor-reconstruction .eoraptor-support { font-size: clamp(15px, 1.15vw, 17px); }

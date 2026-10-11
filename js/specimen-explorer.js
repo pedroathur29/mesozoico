@@ -122,6 +122,10 @@
   let revealP = 0;
   let wipeFrame = 0;
   let entranceAnimations = [];
+  let morphAnimations = [];
+  let closing = false;
+  const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isDesktop = () => innerWidth > 1050;
 
   function clearEntrance() {
     entranceAnimations.forEach((animation) => animation.cancel());
@@ -209,8 +213,11 @@
     const aspect = canvasAspect(current);
     const mobile = innerWidth <= 700;
     const tablet = innerWidth <= 1050 && !mobile;
-    const width = Math.min(innerWidth * (mobile ? .94 : tablet ? .86 : .48),
-      innerHeight * (mobile ? .33 : tablet ? .42 : .64) * aspect, 1120);
+    // Desktop: cada espécie recebe a mesma área de tela (peso visual equivalente); a largura
+    // (colunas de informação) e a altura (título e controles) limitam os extremos.
+    const width = mobile || tablet
+      ? Math.min(innerWidth * (mobile ? .94 : .86), innerHeight * (mobile ? .33 : .42) * aspect, 1120)
+      : Math.min(Math.sqrt(innerWidth * innerHeight * .296 * aspect), innerWidth * .52, innerHeight * .66 * aspect, 1120);
     const pair = q('.specimen-explorer__pair');
     pair.style.setProperty('--pair-width', `${width}px`);
     pair.style.setProperty('--pair-height', `${width / aspect}px`);
@@ -262,6 +269,65 @@
     parts.scale.setAttribute('aria-label',`${current.name}: cerca de ${length} metros de comprimento, ao lado de uma pessoa de 1,70 metro de altura.`);
   }
 
+  // Desktop: da etapa de informações para a escala, o MESMO animal se reduz e se reposiciona (sem trocar de imagem).
+  // A caixa visível do animal (recorte justo) vai da posição de "informações" até a caixa da comparação.
+  function scalePose() {
+    const g = geo[current.id];
+    const pair = q('.specimen-explorer__pair');
+    const previous = pair.style.transform;
+    pair.style.transform = 'none';
+    const box = pair.getBoundingClientRect();
+    pair.style.transform = previous;
+    const target = parts.scaleAnimal.getBoundingClientRect();
+    const tightLeft = g.tight[0] / g.w * box.width, tightTop = (g.tight[1] - g.split) / g.h * box.height;
+    const scale = target.width / (g.tw / g.w * box.width);
+    return { scale, x: target.left - box.left - scale * tightLeft, y: target.top - box.top - scale * tightTop };
+  }
+  function scalePoseTransform() {
+    const pose = scalePose();
+    return `translate(${pose.x.toFixed(2)}px, ${pose.y.toFixed(2)}px) scale(${pose.scale.toFixed(5)})`;
+  }
+  function clearMorph() {
+    morphAnimations.forEach((animation) => animation.cancel());
+    morphAnimations = [];
+  }
+  function resetPose() {
+    clearMorph();
+    explorer.removeAttribute('data-scale-pose');
+    const pair = q('.specimen-explorer__pair');
+    pair.style.transform = '';
+    pair.style.transformOrigin = '';
+  }
+  function morphScale(forward, done) {
+    clearMorph();
+    const pair = q('.specimen-explorer__pair');
+    const ease = 'cubic-bezier(.45,.05,.2,1)';
+    pair.style.transformOrigin = '0 0';
+    if (forward) {
+      explorer.dataset.scalePose = 'on';
+      const end = scalePoseTransform();
+      pair.style.transform = end;
+      if (reducedMotion()) { done(); return; }
+      const move = pair.animate([{ transform: 'none' }, { transform: end }], { duration: 1250, easing: ease });
+      morphAnimations.push(move);
+      // Chão e pessoa chegam depois que o animal assenta; as medidas por último.
+      const arrive = (selector, delay, duration) => explorer.querySelectorAll(selector).forEach((element) => {
+        morphAnimations.push(element.animate([{ opacity: 0 }, { opacity: 1 }], { duration, delay, easing: 'ease-out', fill: 'backwards' }));
+      });
+      arrive('.specimen-explorer__scale-ground, .specimen-explorer__scale-reference', 700, 380);
+      arrive('.specimen-explorer__scale-measure, .specimen-explorer__scale > p', 980, 320);
+      move.finished.then(() => done()).catch(() => {});
+    } else {
+      const start = scalePoseTransform();
+      explorer.removeAttribute('data-scale-pose');
+      pair.style.transform = 'none';
+      if (reducedMotion()) { pair.style.transform = ''; done(); return; }
+      const move = pair.animate([{ transform: start }, { transform: 'none' }], { duration: 1000, easing: ease });
+      morphAnimations.push(move);
+      move.finished.then(() => { pair.style.transform = ''; done(); }).catch(() => {});
+    }
+  }
+
   function updateStage(nextStage, animate) {
     clearEntrance();
     const oldStage = stage;
@@ -277,7 +343,17 @@
     parts.progress.forEach((dot, index) => dot.classList.toggle('is-current', index === stage));
     if (stage === 3) updateScale();
     if (animate && stage === 2) playInformationEntrance();
-    if (animate && ((oldStage === 0 && stage === 1) || (oldStage === 1 && stage === 0))) {
+    const morph = animate && isDesktop() && ((oldStage === 2 && stage === 3) || (oldStage === 3 && stage === 2));
+    if (morph) {
+      locked = true;
+      parts.previous.disabled = true;
+      parts.next.disabled = true;
+      morphScale(stage === 3, () => {
+        locked = false;
+        parts.previous.disabled = stage === 0;
+        parts.next.disabled = false;
+      });
+    } else if (animate && ((oldStage === 0 && stage === 1) || (oldStage === 1 && stage === 0))) {
       locked = true;
       parts.previous.disabled = true;
       parts.next.disabled = true;
@@ -327,6 +403,7 @@
     q('.specimen-explorer__visual').setAttribute('aria-label', `Esqueleto e reconstrução artística de ${item.name}`);
     explorer.dataset.specimenStage = 'skeleton';
     cancelAnimationFrame(wipeFrame);
+    resetPose();
     revealP = 0;
     updateStage(0, false);
     dialog.showModal();
@@ -337,11 +414,26 @@
     requestAnimationFrame(playEntrance);
   }
 
-  function close() { if (dialog.open) dialog.close(); }
+  // Saída: o explorador some suavemente em vez de desaparecer de uma vez (desktop).
+  function close() {
+    if (!dialog.open || closing) return;
+    if (!isDesktop() || reducedMotion()) { dialog.close(); return; }
+    closing = true;
+    cancelAnimationFrame(wipeFrame);
+    const options = { duration: 300, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' };
+    let backdropFade = null;
+    try { backdropFade = dialog.animate({ opacity: [1, 0] }, Object.assign({ pseudoElement: '::backdrop' }, options)); } catch (error) { /* sem animação do fundo */ }
+    const fade = dialog.animate([{ opacity: 1 }, { opacity: 0 }], options);
+    fade.finished.then(() => { fade.cancel(); backdropFade?.cancel(); closing = false; dialog.close(); }).catch(() => { closing = false; });
+  }
+  dialog.addEventListener('cancel', (event) => { if (isDesktop() && !reducedMotion()) { event.preventDefault(); close(); } });
   q('[data-specimen-close]').addEventListener('click', close);
-  parts.previous.addEventListener('click', () => { if (!locked) updateStage(stage - 1, stage === 1); });
-  parts.next.addEventListener('click', () => { if (locked) return; if (stage === 3) close(); else updateStage(stage + 1, stage === 0); });
+  parts.previous.addEventListener('click', () => { if (!locked) updateStage(stage - 1, true); });
+  parts.next.addEventListener('click', () => { if (locked) return; if (stage === 3) close(); else updateStage(stage + 1, true); });
   dialog.addEventListener('click', (event) => { if (event.target === dialog) close(); });
-  dialog.addEventListener('close', () => { clearEntrance(); cancelAnimationFrame(wipeFrame); locked = false; returnFocus?.focus({ preventScroll: true }); });
-  window.addEventListener('resize', () => { fitPair(); updateScale(); });
+  dialog.addEventListener('close', () => { clearEntrance(); resetPose(); cancelAnimationFrame(wipeFrame); locked = false; returnFocus?.focus({ preventScroll: true }); });
+  window.addEventListener('resize', () => {
+    fitPair(); updateScale();
+    if (stage === 3 && explorer.dataset.scalePose) q('.specimen-explorer__pair').style.transform = scalePoseTransform();
+  });
 })();

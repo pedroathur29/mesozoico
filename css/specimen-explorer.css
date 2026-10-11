@@ -36,35 +36,25 @@
 .jurassic-pair-stage {
   position: absolute;
   z-index: 2;
-  left: 22vw;
-  top: 18vh;
-  width: min(60vw,1120px,140vh);
-  aspect-ratio: 1086 / 724;
+  left: 17vw;
+  top: 44vh;
+  width: min(53vw, 960px);
+  aspect-ratio: 1067 / 494;
   height: auto;
   overflow: hidden;
   pointer-events: none;
 }
-.jurassic-pair-stage img {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  display: block;
-  width: 200%;
-  height: auto;
-  max-width: none;
-}
-.jurassic-pair-stage .jurassic-pair-bones { transform: translateY(-50%); }
-.jurassic-pair-stage .jurassic-pair-living { transform: translate(-50%,-50%); }
+.jurassic-pair-stage img { position: absolute; top: 0; left: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: contain; transform: none; }
 .jurassic-pair-bones-frame { position:absolute; inset:0; overflow:hidden; }
 .jurassic-pair-living-frame { position:absolute; inset:0; overflow:hidden; clip-path:inset(0 100% 0 0); }
 .jurassic-pair-line {
   position: absolute;
   z-index: 4;
-  top: 7%;
-  bottom: 6%;
+  top: 0;
+  height: 0;
   left: 0;
   width: 2px;
-  background: #e6efda;
+  background: linear-gradient(180deg, rgba(230,239,218,0), #e6efda 14%, #e6efda 86%, rgba(230,239,218,0));
   box-shadow: 0 0 17px 3px rgba(218,235,207,.66);
   opacity: 0;
 }
@@ -78,8 +68,7 @@
 .panel--jurassic-diplodocus .jurassic-copy--diplodocus .scene-prose { position:absolute; left:0; top:31vh; width:min(370px,23vw); margin:0 !important; }
 .panel--jurassic-diplodocus .jurassic-copy--diplodocus .jurassic-support { max-width:27ch; font-size:clamp(19px,1.35vw,24px); font-weight:700; line-height:1.3; letter-spacing:-.025em; }
 .panel--jurassic-diplodocus .jurassic-copy--diplodocus .scene-prose p:not(.jurassic-support) { max-width:37ch; margin-top:18px; font-size:clamp(14px,1vw,16px); line-height:1.5; }
-.panel--jurassic-diplodocus .jurassic-pair-stage { left:16vw; top:20vh; width:min(56vw,1050px); }
-.panel--jurassic-diplodocus .jurassic-diplodocus-living-detail { top:46%; left:0; width:100%; transform:translateY(-50%); clip-path:none; filter:drop-shadow(0 18px 22px rgba(0,0,0,.25)); }
+.panel--jurassic-diplodocus .jurassic-diplodocus-living-detail { clip-path:none; filter:drop-shadow(0 18px 22px rgba(0,0,0,.25)); }
 .panel--jurassic-diplodocus .jurassic-specimen-facts { left:auto; right:9vw; top:27vh; bottom:auto; width:min(330px,20vw); display:grid; gap:14px; padding:0; border:0; }
 .jurassic-comparison-chart { position:absolute; z-index:2; left:27vw; top:34vh; width:min(49vw,900px); height:min(55vh,510px); }
 .jurassic-comparison-chart .jurassic-comparison-diplodocus { position:absolute; z-index:2; top:0; left:0; display:block; width:100%; height:auto; max-width:none; aspect-ratio:auto; overflow:visible; object-fit:contain; filter:drop-shadow(0 16px 20px rgba(0,0,0,.28)); }
@@ -148,6 +137,9 @@
 .specimen-explorer[data-specimen-stage="scale"] .specimen-explorer__scale { left:8vw; }
 .specimen-explorer[data-specimen-stage="scale"] .specimen-explorer__scale { opacity:1; visibility:visible; }
 .specimen-explorer[data-specimen-stage="scale"] .specimen-explorer__visual { opacity:0; visibility:hidden; }
+/* Desktop: na escala o próprio animal da etapa anterior, reposicionado, permanece visível; só o recorte da comparação fica oculto. */
+.specimen-explorer[data-specimen-stage="scale"][data-scale-pose] .specimen-explorer__visual { opacity:1; visibility:visible; }
+.specimen-explorer[data-scale-pose] .specimen-explorer__scale-animal { opacity:0; }
 .specimen-explorer__scale-ground { position:absolute; left:0; right:0; bottom:20%; height:1px; background:rgba(225,238,218,.42); }
 .specimen-explorer__scale-animal { position:absolute; left:1%; bottom:20%; width:var(--animal-scale-width,70%); height:var(--animal-scale-height,65%); overflow:visible; transform:translateY(var(--foot-offset,0px)); }
 .specimen-explorer__scale-animal img { position:absolute; bottom:0; left:0; display:block; width:100%; height:auto; max-width:none; filter:drop-shadow(0 16px 20px rgba(0,0,0,.35)); }
@@ -243,7 +235,7 @@
   .specimen-explorer__visual { left: 26vw; right: 26vw; top: 24vh; height: 65vh; }
   .specimen-explorer[data-specimen-stage="information"] .specimen-explorer__visual { left: 26vw; right: 26vw; top: 24vh; height: 65vh; }
   .specimen-explorer[data-specimen-stage="information"] .specimen-explorer__pair { transform: none; }
-  .specimen-explorer__information { left: 6vw; right: 6vw; top: 26vh; bottom: 12vh; grid-template-columns: minmax(0,19vw) minmax(0,19vw); align-items: center; gap: 20px; pointer-events: none; }
+  .specimen-explorer__information { left: 5vw; right: 5vw; top: 26vh; bottom: 12vh; grid-template-columns: minmax(0,18vw) minmax(0,18vw); align-items: center; gap: 20px; pointer-events: none; }
   .specimen-explorer[data-specimen-stage="information"] .specimen-explorer__information { pointer-events: auto; }
   .specimen-explorer__narrative { margin-top: 0; }
   .specimen-explorer__panel-label { margin-bottom: 14px; font-size: 15px; }
@@ -267,17 +259,6 @@
   .specimen-explorer__scale > p { font-size: 14px; }
 }
 
-/* ===== Diplodocus (história principal): mesmas imagens alinhadas, mesma tela ===== */
-.jurassic-pair-stage { aspect-ratio: 1067 / 494; }
-.jurassic-pair-stage img { top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; transform: none; }
-.jurassic-pair-stage .jurassic-pair-bones, .jurassic-pair-stage .jurassic-pair-living { transform: none; }
-.panel--jurassic-diplodocus .jurassic-diplodocus-living-detail { top: 0; left: 0; width: 100%; transform: none; }
-.jurassic-pair-line { top: 0; bottom: auto; height: 0; background: linear-gradient(180deg, rgba(230,239,218,0), #e6efda 14%, #e6efda 86%, rgba(230,239,218,0)); }
-
-/* Diplodocus: mesma caixa nas cenas 19, 20 e 21 (esqueleto, passagem, reconstrução), livre do texto e dos cartões de dados */
-.jurassic-pair-stage, .panel--jurassic-diplodocus .jurassic-pair-stage { left: 17vw; top: 44vh; width: min(53vw, 960px); }
-.jurassic-comparison-chart { left: 27vw; top: 43vh; width: min(38vw, 700px); height: 49vh; }
-
 /* Seven species use their original 3D sheets; source windows are positioned by pairs-renderer. */
 .specimen-choice--sheet .specimen-choice__thumb { position:relative; flex:0 0 auto; overflow:hidden; background:none; }
 .specimen-choice__thumb img { display:block; }
@@ -296,7 +277,6 @@
 .specimen-explorer__scale > p { max-width:900px; margin-inline:auto; }
 .specimen-explorer__context { gap:18px; }
 .specimen-explorer__caveat { font-size:13px; line-height:1.4; margin-top:8px; }
-.jurassic-pair-stage { overflow:hidden; }
 .jurassic-comparison-chart { left:8vw; top:35vh; width:79vw; height:54vh; }
 .jurassic-comparison-animal,.jurassic-comparison-human { position:absolute; bottom:18%; overflow:hidden; }
 .jurassic-comparison-ground { position:absolute; left:0; right:0; bottom:18%; height:1px; background:rgba(238,239,226,.3); }
@@ -310,18 +290,14 @@
 .panel--jurassic-comparison .jurassic-copy--comparison h2 { font-size:clamp(36px,4vw,64px); }
 .panel--jurassic-comparison .jurassic-copy--comparison .scene-prose { max-width:780px; }
 
-/* ===== v3: as novas reconstruções têm pescoço e cauda mais altos que as anteriores.
-   Esta camada reserva ao animal uma faixa própria, abaixo do bloco de texto, para que
-   nenhuma imagem passe sobre as letras. Só posição e largura mudam: as proporções da
-   imagem continuam intactas (object-fit: contain) e o texto mantém o tamanho original.
-   Restrita a telas largas para não interferir nas regras de 1050 px e 700 px. ===== */
+/* ===== Escala do Diplodocus e nota do esqueleto (telas largas) =====
+   A caixa do animal nas cenas 20–22 fica em text-fit-20261008.css. ===== */
 @media (min-width: 1051px) {
-  .jurassic-copy--diplodocus,
-  .jurassic-copy--specimen-skeleton,
-  .jurassic-copy--specimen-bridge { top: 6vh; }
   .jurassic-pair-note { bottom: 2vh; }
-  /* mesma caixa nas três cenas do Diplodocus: o animal não muda de lugar na transição */
-  .jurassic-comparison-chart { left: 13vw; top: 67vh; width: min(74vw, 1200px); height: 27vh; }
+  .jurassic-comparison-chart { left: 13vw; top: 54vh; width: min(74vw, 1200px); height: 40vh; }
+}
+@media (min-width: 1051px) and (max-height: 820px) {
+  .jurassic-comparison-chart { top: 58vh; height: 37vh; }
 }
 
 
