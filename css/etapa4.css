@@ -1,0 +1,379 @@
+/* ==========================================================================
+   MESOZOICO · Etapa 4
+   Camada de implementação das Etapas 3 e 3.1. Carrega por último e só
+   sobrescreve; os CSS anteriores continuam como estavam.
+   Não altera textos, imagens, ordem das cenas nem a lógica das transições.
+   ========================================================================== */
+
+/* ---------- Tokens (paleta aprovada na Etapa 3) ---------- */
+:root {
+  --basalto: #080B09;
+  --osso: #EDE7D8;
+  --pedra: #A9AA9F;
+  --ocre-hi: #E6C08C;
+  --ink: #EDE7D8;
+  --muted: #A9AA9F;
+  --hair: rgba(237, 231, 216, .22);
+}
+
+/* Foco visível em todo controle */
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ocre-hi);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- Frase de destaque: mesma família da cena, só peso e cor osso ---------- */
+.panel .scene-prose > p > strong:only-child,
+.panel .eoraptor-support > strong {
+  font-family: var(--font-body);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--osso);
+}
+
+/* Texto sobre imagem: sombra mínima, só para estabilizar a leitura */
+.panel .scene-prose p,
+.panel .eyebrow { text-shadow: 0 1px 10px rgba(8, 11, 9, .55); }
+
+/* ---------- Controles do cabeçalho ---------- */
+.header-controls {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+.video-pause,
+.credits-trigger--header {
+  min-height: 44px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(237, 231, 216, .28);
+  border-radius: 999px;
+  background: rgba(8, 11, 9, .42);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--osso);
+  font: 500 13px/1 var(--sans);
+  letter-spacing: 0;
+  transition: border-color .2s ease, background .2s ease;
+}
+.video-pause:hover,
+.credits-trigger--header:hover { border-color: var(--ocre-hi); background: rgba(8, 11, 9, .7); }
+.credits-trigger--header span { color: inherit; font-size: inherit; }
+.video-pause svg { flex: none; fill: currentColor; }
+.video-pause { display: none; }
+.video-pause[hidden] { display: none !important; }
+html.is-opening .video-pause:not([hidden]) { display: inline-flex; }
+.video-pause.is-paused svg rect:first-child { transform: translateX(1px); }
+
+/* ---------- Cena 1 · Abertura ---------- */
+.opening-video {
+  transform: scale(1.3);
+  transform-origin: 0 50%;
+  object-position: 0 50%;
+}
+.opening-vignette {
+  background:
+    linear-gradient(90deg, rgba(8, 11, 9, .9) 0, rgba(8, 11, 9, .62) 32%, rgba(8, 11, 9, 0) 54%),
+    linear-gradient(0deg, rgba(8, 11, 9, .72), transparent 36%) !important;
+}
+.panel--opening {
+  align-items: end;
+  padding-top: 96px;
+  padding-left: max(24px, 4.44vw);
+  padding-bottom: max(64px, 14vh);
+}
+.panel--opening .opening-copy {
+  width: min(39vw, 560px);
+  max-width: none;
+  padding-bottom: 0;
+}
+.panel--opening .opening-copy h1 {
+  font-size: clamp(40px, min(5vw, 8.2vh), 72px);
+  line-height: 1.02;
+  margin: 0 0 clamp(14px, 2.9vh, 26px);
+}
+.panel--opening .opening-copy .scene-prose { width: min(31.3vw, 450px); }
+.panel--opening .opening-copy .scene-prose p {
+  max-width: none;
+  margin: 0 0 .7em;
+  font-size: clamp(14.5px, min(1.2vw, 2.1vh), 17px);
+  line-height: 1.55;
+  color: rgba(237, 231, 216, .9);
+}
+.panel--opening .opening-copy .scene-prose p:first-child { margin-top: 0; }
+.panel--opening .opening-copy .scene-prose p:last-child { margin-top: 1.1em; font-size: clamp(17px, min(1.5vw, 2.8vh), 22px); }
+.panel--opening .opening-copy .scene-prose p:last-child strong { font-size: 1em; }
+.start-journey,
+.video-play {
+  min-height: 48px;
+  margin-top: clamp(16px, 2.8vh, 26px);
+  padding: 0 22px;
+  gap: 14px;
+  border: 1px solid var(--ocre-hi);
+  border-radius: 999px;
+  color: var(--ocre-hi);
+  font-size: 14.5px;
+  background: rgba(8, 11, 9, .25);
+  transition: background .2s ease, color .2s ease;
+}
+.start-journey span, .video-play span { color: inherit; }
+.start-journey:hover, .video-play:hover { background: var(--ocre-hi); color: var(--basalto); }
+.opening-foot { color: var(--pedra); }
+
+/* ---------- Régua do tempo: coluna de rocha discreta ---------- */
+.time-rail { color: rgba(237, 231, 216, .8); }
+.time-rail__track {
+  width: 5px;
+  margin-left: auto;
+  border-right: 0;
+  background: linear-gradient(180deg, #5a4430 0, #c79a62 46.4%, #2b4a3c 46.4%, #66735A 100%);
+  opacity: .78;
+}
+.time-rail__fill { display: none; }
+.time-rail__track::before,
+.time-rail__track::after {
+  position: absolute;
+  left: calc(100% + 8px);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font: 500 12px/1 var(--font-body);
+  color: var(--pedra);
+  white-space: nowrap;
+}
+.time-rail__track::before { content: "Triássico"; top: 4%; }
+.time-rail__track::after { content: "Jurássico"; top: 54%; }
+.time-rail__marker { right: -7px; width: 12px; height: 12px; background: var(--night); border: 2px solid var(--ochre); box-shadow: 0 0 12px rgba(212, 166, 106, .45); }
+.time-stop i { display: none; }
+.time-rail__heading { font-size: 12px; }
+.time-rail__unit { font-size: 12px; }
+
+/* ---------- Cena 2 · Ischigualasto ---------- */
+.site-photo span::before {
+  content: "Evidência";
+  display: inline-block;
+  margin-right: 10px;
+  padding-right: 12px;
+  border-right: 1px solid rgba(237, 231, 216, .5);
+  color: var(--osso);
+  font-weight: 600;
+}
+.panel--site-present .site-copy .eyebrow { color: var(--osso); }
+
+/* ---------- Marcador de reconstrução (cenas 12 e 22, legenda de reconstrução) ---------- */
+.specimen-disclaimer::before,
+.jurassic-visual-note::before {
+  content: "";
+  display: inline-block;
+  width: 22px;
+  margin-right: 10px;
+  vertical-align: middle;
+  border-top: 2px dashed var(--ocre-hi);
+}
+
+/* ---------- Cena 12 · Eoraptor ---------- */
+.eoraptor-detail-title { text-shadow: 0 2px 24px rgba(8, 11, 9, .6); }
+
+/* Convite do explorador: discreto, sem caixas */
+.specimen-choice__thumb { position: relative; flex: 0 0 56px; }
+.specimen-choice {
+  padding: 4px;
+  gap: 8px;
+  border-color: transparent;
+  border-radius: 999px;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  min-height: 44px;
+  font: 500 12px/1.2 var(--sans);
+  color: var(--osso);
+}
+.specimen-choice:hover,
+.specimen-choice:focus-visible { background: rgba(237, 231, 216, .08); border-color: var(--hair); transform: none; }
+.specimen-choice__name small { color: var(--pedra); font-size: 12px; }
+
+/* ---------- Notas científicas ---------- */
+.science-note summary { font-size: 13.5px; color: var(--pedra); min-height: 24px; }
+.science-note p { font-size: 13.5px; color: var(--pedra); }
+
+/* ---------- Legendas e rótulos: nunca abaixo de 12 px ---------- */
+.image-caption, .map-stamp, .scale-note, .jurassic-pair-note, .jurassic-visual-note, .specimen-disclaimer { font-size: max(12px, .8125rem); }
+
+/* ---------- Cenas 6, 7 e 8: leitura (diagnóstico da Etapa 2) ---------- */
+@media (min-width: 1051px) {
+  /* Cena 7: título antes da prosa (a ordem do DOM), em coluna única */
+  .panel--forest .panel-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(16px, 3vh, 28px);
+    padding: 0 0 0 8.2vw;
+  }
+  .panel--forest .panel-copy h2,
+  .panel--forest .panel-copy .scene-prose { position: static; width: auto; bottom: auto; top: auto; left: auto; }
+  .panel--forest .panel-copy h2 { max-width: 13ch; font-size: clamp(44px, 4.8vw, 66px); }
+  .panel--forest .panel-copy .scene-prose { width: min(36vw, 540px); }
+  .panel--forest .panel-copy .image-caption { left: 8.2vw; }
+  /* Cena 6: véu local atrás do título, sem caixa */
+  .panel--water .panel-shade {
+    background:
+      radial-gradient(ellipse 34% 26% at 72% 24%, rgba(7, 15, 13, .62), transparent 100%),
+      linear-gradient(90deg, rgba(7, 15, 13, .76), transparent 52%),
+      linear-gradient(0deg, rgba(7, 15, 13, .55), transparent 48%);
+  }
+  .panel--water .panel-copy h2 { text-shadow: 0 2px 26px rgba(5, 10, 8, .7); }
+}
+.dino-fossil-visual figcaption,
+.panel--dinosaurs .dino-fossil-visual figcaption {
+  color: var(--osso);
+  font-size: 13px;
+  text-shadow: 0 1px 12px rgba(8, 11, 9, .9);
+  background: linear-gradient(0deg, rgba(8, 11, 9, .72), transparent);
+}
+
+/* Convite do explorador: título de grupo (texto de interface, não editorial) */
+.specimen-choices::before {
+  grid-column: 1 / -1;
+  margin: 0 0 2px 4px;
+  color: var(--pedra);
+  font: 400 13px/1.3 var(--sans);
+}
+.specimen-choices[data-specimen-group="triassic"]::before { content: "Explorar outros de Ischigualasto"; }
+.specimen-choices[data-specimen-group="jurassic"]::before { content: "Explorar outros da Formação Morrison"; }
+
+/* Desktop: o convite fica logo abaixo da coluna de cards, alinhado a ela e antes da régua do tempo */
+@media (min-width: 1051px) {
+  .panel--eoraptor-reconstruction .eoraptor-context-column { align-self: start; justify-content: flex-start; margin-top: 0; }
+  /* Cena 22: a nota de reconstrução vai para a coluna do texto, liberando o espaço sob os cards */
+  .panel--jurassic-diplodocus .jurassic-visual-note { left: 8.2vw; right: auto; bottom: 3.3vh; max-width: 46ch; text-align: left; }
+  .panel--eoraptor-reconstruction .specimen-choices,
+  .panel--jurassic-diplodocus .specimen-choices {
+    top: auto;
+    left: auto;
+    right: 12vw;
+    bottom: 1.6vh;
+    width: 20.8vw;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .specimen-choice { flex-direction: column; justify-content: flex-start; text-align: center; gap: 4px; padding: 4px 2px; border-radius: 12px; min-height: 88px; }
+  .specimen-choice__thumb { flex: 0 0 52px; width: 66px !important; height: 52px !important; }
+  .specimen-choice__name { text-align: center; }
+  .specimen-choice__name small { display: none; }
+  /* Cena 22: o rótulo de contexto fica acima do texto, sem cruzá-lo */
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .eyebrow { top: calc(23vh - 34px); }
+}
+
+/* ==========================================================================
+   MOBILE (até 700 px)
+   ========================================================================== */
+@media (max-width: 700px) {
+  .site-header { height: 60px; padding: 0 16px; background: linear-gradient(180deg, rgba(8, 11, 9, .85), transparent); }
+  .header-caption { display: none; }
+  .site-header .wordmark { font-size: 16px; }
+  .header-controls { grid-column: 2; gap: 8px; }
+  .video-pause, .credits-trigger--header { min-height: 44px; padding: 0 14px; }
+  .video-pause { width: 44px; padding: 0; justify-content: center; }
+  .video-pause span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .credits-long { display: none; }
+
+  /* Abertura: o quadro do vídeo não importa para a leitura; véu forte sob o texto */
+  .opening-video { transform: none; object-position: 34% 50%; }
+  .opening-vignette {
+    background: linear-gradient(180deg, rgba(8, 11, 9, .55) 0, rgba(8, 11, 9, .05) 22%, rgba(8, 11, 9, .86) 44%, rgba(8, 11, 9, .96) 100%) !important;
+  }
+  .panel--opening { align-items: end; padding: 80px 20px 64px; }
+  .panel--opening .opening-copy { width: 100%; }
+  .panel--opening .opening-copy h1 { font-size: clamp(34px, 10.2vw, 42px); }
+  .panel--opening .opening-copy .scene-prose { width: auto; }
+  .panel--opening .opening-copy .scene-prose p { font-size: 16px; line-height: 1.5; }
+  .panel--opening .opening-copy .scene-prose p:last-child { font-size: 21px; }
+  .opening-foot { font-size: 12px; left: 20px; bottom: 20px; right: 150px; }
+
+  /* Régua compacta, mínimo de 12 px */
+  .time-rail { right: 12px; bottom: 12px; padding: 8px 10px; background: rgba(8, 11, 9, .62); }
+  .time-rail__present { font-size: 12px; }
+  .time-rail__track { width: 112px; height: 4px; opacity: .9; }
+  .time-rail__track::before, .time-rail__track::after { display: none; }
+  .time-stop b { font-size: 12px; }
+
+  /* Rótulos e legendas: nada abaixo de 12 px */
+  .eoraptor-kicker, .eoraptor-facts dt, .jurassic-specimen-facts dt, .specimen-disclaimer,
+  .panel--eoraptor-reconstruction .eoraptor-context-column .eoraptor-facts dt,
+  .jurassic-specimen-facts small, .jurassic-visual-note, .scale-note, .image-caption { font-size: 12px !important; }
+  .panel--eoraptor-reconstruction .specimen-disclaimer { font-size: 12px; line-height: 1.4; }
+
+  /* Cena 12: convite depois da ficha, no mesmo fluxo rolável */
+  .specimen-choices.is-in-flow,
+  .panel--eoraptor-reconstruction .specimen-choices.is-in-flow {
+    position: static;
+    order: 4;
+    width: 100%;
+    margin-top: 6px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .specimen-choice { min-height: 44px; padding: 3px 6px 3px 3px; font-size: 12px; gap: 6px; flex-direction: row; text-align: left; justify-content: flex-start; }
+  .specimen-choice__thumb { flex-basis: 40px; width: 40px !important; height: 32px !important; }
+  .specimen-choice__name { font-size: 12px; overflow-wrap: anywhere; text-align: left; }
+  .specimen-choice__name small { display: none; }
+
+  /* Cena 22 (Diplodocus): o animal fixo no alto; texto, ficha, nota e convite rolam abaixo.
+     Mesma lógica da cena 12, sem sobreposição. */
+  .panel--jurassic-diplodocus {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    height: 100svh;
+    padding: 64px 22px 84px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .panel--jurassic-diplodocus .jurassic-specimen-word { display: none; }
+  .panel--jurassic-diplodocus .jurassic-pair-stage--wipe {
+    position: sticky;
+    top: 0;
+    left: auto;
+    order: 0;
+    z-index: 3;
+    flex: 0 0 auto;
+    width: 100%;
+    background: #1a1e1a;
+  }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus {
+    position: static;
+    order: 1;
+    width: auto;
+    padding: 0;
+  }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .eyebrow { position: static; margin: 0 0 6px; font-size: 13px; }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus h2 { font-size: clamp(34px, 10vw, 44px); line-height: 1.05; }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .scene-prose { position: static; width: auto; max-width: none; margin-top: 10px !important; }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .scene-prose p { max-width: none; font-size: 15px; line-height: 1.5; margin: 0 0 8px; }
+  .panel--jurassic-diplodocus .jurassic-copy--diplodocus .jurassic-support { font-size: 19px; }
+  .panel--jurassic-diplodocus .jurassic-specimen-facts { position: static; order: 2; width: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding-top: 12px; }
+  .panel--jurassic-diplodocus .jurassic-visual-note { position: static; order: 3; max-width: none; }
+  .panel--jurassic-diplodocus .specimen-choices { position: static; order: 4; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+
+  /* Cena 23 (escala do Diplodocus): texto rola no alto, medida fixa embaixo */
+  .panel--jurassic-comparison .jurassic-copy--comparison {
+    top: 64px;
+    bottom: 42svh;
+    left: 22px;
+    right: 22px;
+    width: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .panel--jurassic-comparison .jurassic-comparison-chart { top: auto; bottom: 88px; height: 26svh; }
+}
