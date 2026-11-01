@@ -1,0 +1,1 @@
+window.KPG_PALEO={"terra66": "img/dados/dae5484d690bf993.webp", "sup66": "img/dados/ecd3e3ce4dc0ffb2.jpg", "deriva": ["img/dados/c56b025b148d541b.webp", "img/dados/72ff803aaca0b60b.webp", "img/dados/021e9273828b09c4.webp"]};

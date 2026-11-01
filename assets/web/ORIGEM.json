@@ -1,0 +1,342 @@
+[
+ {
+  "src": "assets/parede-fosseis.webp",
+  "kept": true,
+  "nat": 1600
+ },
+ {
+  "src": "assets/ischigualasto.webp",
+  "nat": 960,
+  "big": 304,
+  "small": 304,
+  "bytesBefore": 121000,
+  "outs": [
+   [
+    "assets/web/ischigualasto-304.webp",
+    304,
+    12012
+   ]
+  ]
+ },
+ {
+  "src": "assets/eoraptor-esqueleto.webp",
+  "kept": true,
+  "nat": 1448
+ },
+ {
+  "src": "assets/eoraptor.webp",
+  "kept": true,
+  "nat": 1448
+ },
+ {
+  "src": "assets/hyperodapedon-menshikov.png",
+  "nat": 1618,
+  "big": 1618,
+  "small": 1416,
+  "bytesBefore": 1587687,
+  "outs": [
+   [
+    "assets/web/hyperodapedon-menshikov-1618.webp",
+    1618,
+    273418
+   ]
+  ]
+ },
+ {
+  "src": "assets/hyperodapedon-crilar-pv585.webp",
+  "nat": 1050,
+  "big": 928,
+  "small": 928,
+  "bytesBefore": 184056,
+  "outs": [
+   [
+    "assets/web/hyperodapedon-crilar-pv585-928.webp",
+    928,
+    71684
+   ]
+  ]
+ },
+ {
+  "src": "assets/five-islands.jpg",
+  "nat": 2272,
+  "big": 2272,
+  "small": 1416,
+  "bytesBefore": 2446523,
+  "outs": [
+   [
+    "assets/web/five-islands-1416.webp",
+    1416,
+    227726
+   ],
+   [
+    "assets/web/five-islands-2272.webp",
+    2272,
+    471666
+   ]
+  ]
+ },
+ {
+  "src": "assets/jurassico/eubrontes-original.jpg",
+  "nat": 1000,
+  "big": 704,
+  "small": 696,
+  "bytesBefore": 486001,
+  "outs": [
+   [
+    "assets/web/eubrontes-original-704.webp",
+    704,
+    130930
+   ]
+  ]
+ },
+ {
+  "src": "assets/jurassico/bagualia-montagem-original.jpg",
+  "nat": 2388,
+  "big": 1096,
+  "small": 672,
+  "bytesBefore": 1093852,
+  "outs": [
+   [
+    "assets/web/bagualia-montagem-original-672.webp",
+    672,
+    80060
+   ],
+   [
+    "assets/web/bagualia-montagem-original-1096.webp",
+    1096,
+    164962
+   ]
+  ]
+ },
+ {
+  "src": "assets/jurassico/sophie-esqueleto.jpg",
+  "nat": 1956,
+  "big": 1956,
+  "small": 1152,
+  "bytesBefore": 338196,
+  "outs": [
+   [
+    "assets/web/sophie-esqueleto-1152.webp",
+    1152,
+    66088
+   ],
+   [
+    "assets/web/sophie-esqueleto-1956.webp",
+    1956,
+    142746
+   ]
+  ]
+ },
+ {
+  "src": "assets/jurassico/sophie-reconstrucao.png",
+  "nat": 3500,
+  "big": 3032,
+  "small": 1568,
+  "bytesBefore": 9413706,
+  "outs": [
+   [
+    "assets/web/sophie-reconstrucao-1568.webp",
+    1568,
+    76766
+   ],
+   [
+    "assets/web/sophie-reconstrucao-3032.webp",
+    3032,
+    219718
+   ]
+  ]
+ },
+ {
+  "src": "assets/jurassico/carnegie-original.jpg",
+  "nat": 4000,
+  "big": 4000,
+  "small": 4000,
+  "bytesBefore": 7460046,
+  "outs": [
+   [
+    "assets/web/carnegie-original-4000.webp",
+    4000,
+    1918392
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/utahraptor-esqueleto-ilustrado.png",
+  "nat": 1986,
+  "big": 1986,
+  "small": 1448,
+  "bytesBefore": 963949,
+  "outs": [
+   [
+    "assets/web/utahraptor-esqueleto-ilustrado-1986.webp",
+    1986,
+    250040
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/utahraptor-vida-original.png",
+  "nat": 6581,
+  "big": 2464,
+  "small": 1536,
+  "bytesBefore": 18292445,
+  "outs": [
+   [
+    "assets/web/utahraptor-vida-original-1536.webp",
+    1536,
+    58228
+   ],
+   [
+    "assets/web/utahraptor-vida-original-2464.webp",
+    2464,
+    139542
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/yutyrannus-esqueleto-revisado.png",
+  "nat": 2172,
+  "big": 2172,
+  "small": 1352,
+  "bytesBefore": 977998,
+  "outs": [
+   [
+    "assets/web/yutyrannus-esqueleto-revisado-1352.webp",
+    1352,
+    137438
+   ],
+   [
+    "assets/web/yutyrannus-esqueleto-revisado-2172.webp",
+    2172,
+    292266
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/yutyrannus-vida-original.png",
+  "nat": 2172,
+  "big": 2172,
+  "small": 1352,
+  "bytesBefore": 1412249,
+  "outs": [
+   [
+    "assets/web/yutyrannus-vida-original-1352.webp",
+    1352,
+    142230
+   ],
+   [
+    "assets/web/yutyrannus-vida-original-2172.webp",
+    2172,
+    322116
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/psittacosaurus-smf-r4970-figura.jpg",
+  "nat": 2234,
+  "big": 2234,
+  "small": 2234,
+  "bytesBefore": 1692877,
+  "outs": [
+   [
+    "assets/web/psittacosaurus-smf-r4970-figura-2234.webp",
+    2234,
+    942172
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/psittacosaurus-smf-r4970-modelo.png",
+  "nat": 2953,
+  "big": 2400,
+  "small": 1448,
+  "bytesBefore": 3745815,
+  "outs": [
+   [
+    "assets/web/psittacosaurus-smf-r4970-modelo-1448.webp",
+    1448,
+    155336
+   ],
+   [
+    "assets/web/psittacosaurus-smf-r4970-modelo-2400.webp",
+    2400,
+    318950
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/asteriornis-holotipo.png",
+  "nat": 2932,
+  "big": 1880,
+  "small": 1256,
+  "bytesBefore": 5187428,
+  "outs": [
+   [
+    "assets/web/asteriornis-holotipo-1256.webp",
+    1256,
+    142556
+   ],
+   [
+    "assets/web/asteriornis-holotipo-1880.webp",
+    1880,
+    229184
+   ]
+  ]
+ },
+ {
+  "src": "assets/cretaceo/asteriornis-cranio.png",
+  "nat": 2126,
+  "big": 2126,
+  "small": 1512,
+  "bytesBefore": 2683073,
+  "outs": [
+   [
+    "assets/web/asteriornis-cranio-2126.webp",
+    2126,
+    255582
+   ]
+  ]
+ },
+ {
+  "src": "assets/hyperodapedon-figura-7-original.png",
+  "integral": "assets/integral/hyperodapedon-figura-7-original.webp",
+  "before": 4488642,
+  "after": 3132820,
+  "identical": true
+ },
+ {
+  "src": "assets/jurassico/sophie-reconstrucao.png",
+  "integral": "assets/integral/sophie-reconstrucao.webp",
+  "before": 9413706,
+  "after": 1886332,
+  "identical": true
+ },
+ {
+  "src": "assets/cretaceo/utahraptor-vida-original.png",
+  "integral": "assets/integral/utahraptor-vida-original.webp",
+  "before": 18292445,
+  "after": 3197124,
+  "identical": true
+ },
+ {
+  "src": "assets/cretaceo/psittacosaurus-smf-r4970-modelo.png",
+  "integral": "assets/integral/psittacosaurus-smf-r4970-modelo.webp",
+  "before": 3745815,
+  "after": 2410866,
+  "identical": true
+ },
+ {
+  "src": "assets/cretaceo/asteriornis-cranio.png",
+  "integral": "assets/integral/asteriornis-cranio.webp",
+  "before": 2683073,
+  "after": 1318722,
+  "identical": true
+ },
+ {
+  "src": "assets/cretaceo/asteriornis-holotipo.png",
+  "integral": "assets/integral/asteriornis-holotipo.webp",
+  "before": 5187428,
+  "after": 2628460,
+  "identical": true
+ }
+]

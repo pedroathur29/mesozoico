@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR" data-ave="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MESOZOICO · Limite K–Pg (maquete 3D)</title>
+<meta name="description" content="Maquete local isolada: passagem cinematográfica pelo limite Cretáceo–Paleógeno, com modelos 3D, câmera e luz coreografadas.">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="fontes/fonts.css">
+<link rel="stylesheet" href="css/kpg.css?v=site1">
+</head>
+<body data-chapter="0" data-state="loading">
+<a class="skip" href="#painel-fontes">Ir para fontes e certezas</a>
+
+<div class="track" id="track" aria-hidden="true"></div>
+
+<div class="stage" id="stage" aria-hidden="true">
+  <canvas id="gl"></canvas>
+  <div class="veil" id="veil"></div>
+  <div class="labels" id="labels"></div>
+</div>
+<div class="scrim" aria-hidden="true"></div>
+
+<header class="top">
+  <p class="brand"><b>MESOZOICO</b><span>Cretáceo · limite K–Pg</span></p>
+  <p class="kind" id="kind" aria-live="polite"></p>
+  <button class="link" id="btn-fontes" aria-controls="painel-fontes" aria-expanded="false">Fontes e certezas</button>
+</header>
+
+
+<button id="btn-modelos" class="link resource-open">Ver modelos adicionados</button>
+<div id="resource-inspector" class="resource-inspector" hidden><p>Rock Face 01 · Poly Haven · CC0<br><small>Rocha genérica do vale atual. Não é uma amostra K–Pg.</small></p><button id="ver-rock">Enquadrar Rock Face 01</button><button id="voltar-camera">Voltar à câmera da apresentação</button></div>
+<main>
+  <!-- Abertura -->
+  <section class="opening" id="opening" aria-labelledby="t-abertura">
+    <p class="eyebrow">Limite Cretáceo–Paleógeno</p>
+    <p class="date"><strong>66,0</strong><span>milhões de anos atrás</span></p>
+    <h1 id="t-abertura">Uma linha na rocha.</h1>
+    <p class="lead">O fim do Cretáceo deixou marcas numa camada de rocha. Chegar até ela leva um pouco mais.</p>
+    <div class="opening-actions">
+      <button class="primary" id="btn-iniciar" disabled><span id="btn-iniciar-txt">Preparando a cena…</span><span class="ico next" aria-hidden="true"></span></button>
+      <span class="loadbar" aria-hidden="true"><i id="loadbar"></i></span>
+      <button class="link" id="btn-assistir" disabled>Assistir sequência</button>
+    </div>
+    <p class="hint" id="hint">Avance com o botão, as setas ou um gesto. Durante o movimento, você pode concluir a passagem.</p>
+  </section>
+
+  <!-- Legenda do momento: uma frase forte e uma explicação curta -->
+  <section class="caption" id="caption" aria-live="polite" aria-atomic="true">
+    <p class="step" id="cap-step"></p>
+    <h2 id="cap-title"></h2>
+    <p id="cap-text"></p>
+    <ul class="marks" id="cap-marks"></ul>
+
+  </section>
+  <p class="ttag" id="ttag" aria-hidden="true"><span id="ttag-t"></span><small id="ttag-s"></small></p>
+  <div class="lux" id="lux" aria-hidden="true"><p>Luz do Sol que chega ao solo <em>esquema, sem escala</em></p><i><b id="lux-b"></b><u title="mínimo para a fotossíntese"></u></i><p class="lux-k"><span>antes do impacto</span><span>mínimo para fotossíntese</span></p></div>
+  <div class="eras" id="eras" aria-hidden="true"><p>Do fim do Cretáceo até hoje <em>escala de tempo, 66 milhões de anos</em></p><i><b id="eras-b"></b></i><p class="eras-k"><span>66 Ma</span><span>hoje</span></p></div>
+  <p class="foto-credito" id="foto-credito"></p><div id="crater-key" class="crater-key" style="opacity:0;visibility:hidden">
+  <p><b class="schema-number">1</b><span><strong>Estrutura soterrada</strong><small>Contorno: esquema de ≈180 km.<br> Inferido a partir de dados geofísicos.</small></span></p>
+  <p><b class="measured-number">2</b><span><strong>Perfuração M0077A</strong><small>Local medido · Expedição 364, 2016.<br> A perfuração alcançou o anel de picos.</small></span></p>
+</div>
+<button type="button" id="btn-corte" class="btn-corte" aria-pressed="false" hidden>Ver corte esquemático</button>
+<div id="subsolo-note" hidden><b>Sob a superfície de hoje.</b><span>Camadas mais jovens cobrem a estrutura do impacto.</span><small>Corte interpretativo · vertical ampliada 12×<br>Traço verde: M0077A, local medido · não é tomografia</small></div>
+<p id="regional-credit" class="regional-credit" hidden>Terra atual · NASA / Reto Stöckli · Blue Marble, 2004<br>Nuvens e luz interpretativas · <a href="https://neo.gsfc.nasa.gov/view.php?datasetId=BlueMarbleNG&amp;date=2004-08-01" target="_blank" rel="noopener">Origem</a> · <a href="img/terra-hoje-bmng-golfo.jpg" target="_blank" rel="noopener">Recorte integral ↗</a></p>
+<p class="final-credit"><span class="fc-aguia">Ave em teste: “White Eagle”, GremorySaiyan (Sketchfab) · espécie não identificada · o arquivo cita o jogo <i>Bless Unleashed</i>: origem e licença pendentes · </span>Árvores e pedras: Poly Haven · <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a></p>
+</main>
+
+<nav class="controls" id="controls" aria-label="Controles da sequência">
+  <div class="buttons">
+    <button class="ctl" id="btn-prev" aria-label="Momento anterior" title="Anterior (←)"><span class="ico prev" aria-hidden="true"></span></button>
+    <button class="ctl main" id="btn-play" aria-label="Assistir sequência" title="Assistir ou pausar (espaço)"><span class="ico play" aria-hidden="true"></span></button>
+  </div>
+  <ol class="rail" id="rail"></ol>
+  <button class="cta" id="btn-next" title="Continuar (→)"><span class="cta-fill" aria-hidden="true"></span><span class="cta-t" id="btn-next-t">Continuar</span><span class="ico next" aria-hidden="true"></span></button>
+</nav>
+
+<aside class="panel" id="painel-fontes" aria-labelledby="t-fontes" hidden>
+  <div class="panel-inner">
+    <button class="close" id="btn-fechar" aria-label="Fechar fontes e certezas">Fechar</button>
+    <h2 id="t-fontes" tabindex="-1">Fontes e certezas</h2>
+    <p>Cada momento diz o que é: <span class="m fato">dado</span> (medição, mapa ou fotografia real), <span class="m est">estimativa</span> (número com incerteza ou resultado de modelo), <span class="m hip">modelo esquemático</span> (feito para explicar, não para reproduzir um lugar) e <span class="m inc">reconstrução artística</span> (cena do passado imaginada a partir das evidências).</p>
+
+    <h3>O que cada momento mostra</h3>
+    <dl class="ledger">
+      <dt>1 · A Terra no fim do Cretáceo</dt>
+      <dd><span class="m est">reconstrução paleogeográfica</span> Nos planos iniciais e na aproximação, a distribuição de terras e mares segue o mapa 16 do <a href="https://www.earthbyte.org/paleodem-resource-scotese-and-wright-2018/" target="_blank" rel="noopener">PALEOMAP, Scotese e Wright (2018)</a>, descrito nos metadados como “KT_Boundary, 66 Ma”. O arquivo contém “65Ma” no nome porque usa o tempo do modelo de placas: a tabela 1 do relatório distingue esse número da idade estratigráfica de 66 Ma. Grade original de 0,1° (cerca de 11 km em latitude), uma reconstrução generalizada, sem precisão de costa local nem detalhes medidos do dia do impacto. <a href="https://zenodo.org/records/5460860" target="_blank" rel="noopener">Dados originais</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. <span class="m inc">interpretação visual</span> Cores e nuvens foram produzidas por código; o ruído fino que sugeria precisão geográfica foi retirado, usando imagens NASA Blue Marble somente como referência de aparência espacial; nenhum pixel de geografia moderna foi aplicado à Terra antiga. A paleta não é um mapa de biomas. O relevo estimado só modula suavemente a cor, sem montanhas exageradas ou deslocamento da esfera. A extensão local do mar raso sobre o alvo de Chicxulub conserva o ajuste aproximado já documentado, apoiado na natureza marinha do alvo; não é uma nova reconstrução de litoral. A direção do Sol é uma escolha de iluminação, não uma efeméride de 66 Ma. O mesmo mapa e as mesmas coordenadas das nuvens permanecem durante toda a aproximação, sem troca por uma fotografia regional atual. <span class="m inc">limite de escopo</span> O mesmo tratamento da superfície e das nuvens permanece no escurecimento. A deriva editorial apresenta depois a mudança para a Terra atual; não representa observação contínua.</dd>
+      <dt>2 · O impacto</dt>
+      <dd><span class="m inc">reconstrução artística</span> A aparência do asteroide é hipotética: forma, cor e relevo do objeto que caiu em Chicxulub são desconhecidos, e a composição (asteroide ou cometa) ainda é debatida. O corpo é gerado por código, rochoso, irregular, escuro e fosco, e aparece em escala com a Terra. Ele gira em torno de um eixo fixo, mais depressa do que um corpo real desse tamanho (que levaria horas por volta). Na entrada na atmosfera, só a face da frente aquece e brilha. <span class="m inc">passagem editorial</span> A marca de tempo segue o relógio do evento e diz o ritmo da tela: a aproximação é comprimida (minutos em poucos segundos), a travessia da atmosfera, de ≈6 s, passa cerca de 2,5 vezes mais rápida, o último meio segundo antes e depois do contato fica perto do tempo real, e depois o tempo acelera até minutos. A câmera acompanha a queda pelo lado sudeste da trajetória, desce até perto do horizonte no contato e depois sobe e se afasta; é um ponto de vista editorial, não o de um observador possível. <span class="m est">simulações</span> Os processos e sua ordem seguem as simulações 3D de Collins et al. (2020): trajetória de cerca de 60° vinda de nordeste, a 20 km/s; onda de choque; cavidade transitória em tigela de ≈100 km aberta no primeiro minuto, mais funda a montante e com a borda mais alta a jusante; soerguimento central que chega ao máximo por volta de 3 minutos e desaba no anel de picos; cortina de ejeção presa à borda. Em impactos oblíquos, o vapor e o material ejetado vão preferencialmente a jusante, para sudoeste (Pierazzo e Melosh 2000; Morgan, Lana e Artemieva 2006); os fragmentos saem da borda da cavidade em crescimento, primeiro mais rápidos, e juntos formam a cortina em cone que cai de volta (Melosh 1989; Collins et al. 2020); o vapor em expansão passa do topo da atmosfera e espalha material pelo planeta (Morgan et al. 2006; Artemieva, Morgan e Expedition 364 Science Party 2017); o anel de picos se forma em minutos (Gulick et al. 2019). Tamanhos e tempos na tela são aproximados. Nenhum campo de densidade nem quadro dessas simulações foi importado: a sequência foi desenhada a partir do que elas descrevem em termos qualitativos. <span class="m hip">interpretação</span> O corpo some no primeiro quarto de segundo depois de tocar o mar: nas simulações, o projétil se deforma, derrete e vaporiza na fase de contato e compressão, que dura mais ou menos o tempo que ele leva para percorrer o próprio diâmetro (≈0,5 s; Melosh 1989). O clarão é curto e forte; a luz do contato vem de uma fonte sobre o ponto de impacto e cai com a distância, e o mar reflete o brilho. A explosão é um volume desenhado com ruído procedural, em quatro fases que nascem uma da outra: o clarão; uma bola de fogo que nasce incandescente no ponto de contato, sobe e esfria do amarelo ao vermelho escuro; uma frente de vapor e poeira que corre rente ao mar; a cortina de material ejetado, em feixes, densa no pé e rala no alto; A pluma tardia e o véu suspenso deixaram de ser desenhados nesta revisão; após a expansão inicial, o volume sai gradualmente. A cavidade mantém o relevo enquanto a câmera se afasta. Essa continuidade editorial não mede a velocidade de preenchimento da estrutura. Não há coluna central nem cogumelo, que são de outra física (explosões no ar). A frente rasante é uma interpretação visual da expansão do vapor e da onda de choque junto à superfície, sem medida direta em Chicxulub. Os riscos da ejeção seguem trajetórias balísticas simples (gravidade constante, sem arrasto do ar). Cores, brilho, opacidade, tamanhos e tempos são interpretados. Nada disso é simulação física, e os parâmetros da maquete não reproduzem numericamente nenhum experimento publicado. <span class="m est">estimativa</span> Cerca de 10 km. O alvo era uma plataforma marinha rasa sobre rochas sedimentares (carbonatos e evaporitos com mais de 3 km de espessura); o volume de resumos LPI 1053 classifica Chicxulub como impacto oceânico raso. <span class="m hip">interpretação</span> A posição do impacto continua no referencial de Müller et al. (2019), 21,92° N e 74,55° O, preservando a câmera aprovada. O mapa PALEOMAP e esse modelo não constituem uma reconstrução regional única: a plataforma marinha local mantém o ajuste aproximado já documentado. Seu contorno é interpretativo, sem precisão topográfica local.</dd>
+      <dt>3 · O céu escureceu</dt>
+      <dd><span class="m est">estimativa</span> Senel et al. (2023) simularam, com o modelo PlanetWRF, a poeira fina de silicato do impacto (grãos de 0,8 a 8 µm, medidos em Tanis, Dakota do Norte). No modelo, a poeira fica no ar por até cerca de 15 anos, a fotossíntese para por quase 2 anos, esférulas maiores caem em poucos dias e a luz no solo volta ao nível anterior em cerca de 3 anos; fuligem e enxofre também contribuem. Outros modelos dão meses a anos de penumbra (Brugger et al. 2017). <span class="m inc">reconstrução artística</span> Três passos, cada um com sua marca de tempo e uma frase curta: horas (material fino começa a se espalhar, representado discretamente no próprio planeta); dias a semanas (a camada se espalha pelo globo de forma desigual, sem faixas de latitude); meses a anos (a mesma região, onde hoje fica Hell Creek, recebe bem menos luz, sem chegar a zero). O medidor “Luz do Sol que chega ao solo” é um esquema sem escala: mostra a ordem dos acontecimentos e a passagem abaixo do mínimo para fotossíntese, não valores medidos. A forma da frente de poeira e a intensidade do escurecimento não vêm de um mapa do modelo. O véu de aerossóis é independente das nuvens de água: sua distribuição irregular e a perda de luz são desenhos editoriais, sem escala de concentração. Cor, cobertura e intensidade não são medições.</dd>
+      <dt>4 · A cratera continua lá</dt>
+      <dd><span class="m inc">passagem editorial</span> A Terra antiga é apresentada antes. Aqui os continentes passam para suas posições atuais antes do zoom, e a marca de tempo muda para “Terra atual · Yucatán”. A câmera aproxima-se pela mesma esfera, terminando numa vista oblíqua com horizonte. Não é filmagem contínua de satélite, nem travessia do tempo em uma observação. <span class="m fato">mosaico de satélite</span> A superfície atual usa Blue Marble Next Generation, agosto de 2004, NASA / Reto Stöckli. Globo e região são duas exportações do mesmo mosaico sem nuvens, em latitude/longitude. O detalhe regional permanece sobre a esfera, sem fotografia plana inserida no zoom. Nuvens, luz e atmosfera são camadas interpretativas estáveis, não o tempo observado naquele mês. Os valores quase pretos de preenchimento no oceano profundo recebem uma cor uniforme de apresentação; não indicam profundidade. As fotografias MODIS de 2021 continuam acessíveis abaixo, como registros separados, e não são projetadas sobre o globo. <span class="m hip">1 · esquema</span> O tracejado representa apenas a dimensão aproximada de 180 km da estrutura enterrada. É um círculo editorial, não uma borda fotografada ou um contorno digitalizado dos dados. <a href="https://doi.org/10.1038/376415a0" target="_blank" rel="noopener">Hildebrand et al. (1995)</a> examinaram gradientes gravimétricos para inferir a dimensão. Dados gravimétricos, sísmicos e amostras de perfurações permitem estudar a estrutura sob rochas mais jovens. Não há cratera aberta ou anéis elevados na paisagem representada. <span class="m fato">2 · local medido</span> O ponto indica M0077A: 21°27,009′ N, 89°56,962′ O, tabela T1 do <a href="https://publications.iodp.org/preliminary_report/364/364PR.PDF" target="_blank" rel="noopener">relatório preliminar da Expedição 364, Gulick, Morgan, Mellett e colaboradores (2017)</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. A perfuração de 2016 alcançou o anel de picos. O mosaico não resolve o poço; o ponto e seu tamanho são marcação editorial sobre a coordenada medida. Não foram reproduzidas figuras do relatório. Máscara costeira auxiliar: Natural Earth 1:50m.</dd>
+      <dt>5 · O que caiu ficou na rocha</dt>
+      <dd><span class="m hip">modelo esquemático</span> A cena começa pela formação da camada: a peça aparece só até o fim do Cretáceo, poeira, fuligem e esférulas caem e formam a argila, e depois camadas mais novas a cobrem. É uma sequência para explicar a ordem, sem tempos reais. O bloco é uma interpretação baseada na seção de Caravaca, sudeste da Espanha (Sosa-Montes De Oca et al. 2013): margas do Maastrichtiano, lâmina avermelhada de 2–3 mm, argila escura de 7–10 cm, margas do Daniano. Cerca de 90 cm de altura (régua de 10 cm). Grão, relevo e cores são procedurais. Não há pedaço do meteoro na rocha: a marca do impacto é química e mineral. <span id="foto-ledger"><span class="m fato">dado</span> A fotografia é de outro lugar, Trinidad Lake State Park, Colorado (EUA), e mostra o mesmo limite. Caravaca e Trinidad são outros locais, não material retirado do M0077A. Bloco e foto não são a mesma amostra nem estão sobrepostos, e nenhuma camada é marcada na foto. Clique na foto para vê-la inteira.</span> <span class="m fato">dado</span> A argila do limite foi identificada em mais de 350 locais (Schulte et al. 2010), com anomalia de irídio (Alvarez et al. 1980), quartzo com feições de choque e esférulas de impacto. O ponto de referência formal do limite (GSSP) fica em El Kef, Tunísia.</dd>
+      <dt>6 · Quem atravessou a linha</dt>
+      <dd><span class="m inc">cena 3D do presente</span> “White Eagle”, modelo animado atribuído a GremorySaiyan. A espécie não foi identificada. A origem e a licença continuam pendentes: o arquivo cita <i>Bless Unleashed</i>. Uso apenas nesta avaliação local. A conversão conserva as pernas recolhidas e os dedos corrigidos; o planeio deriva da pose existente, com orientação contínua dos segmentos no referencial da ave. Câmera e trajeto são escolhas editoriais, não simulação aerodinâmica. O vale é imaginado, não georreferenciado. <span class="m fato">registro fóssil</span> Os dinossauros não avianos desapareceram; linhagens de aves atravessaram o limite. A ave atual representa descendentes vivos, não uma espécie comprovadamente presente no K–Pg nem um ancestral direto identificado.</dd>
+      <dt>Escalas de tempo diferentes</dt>
+      <dd><span class="m est">estimativa</span> Efeitos: o impacto e a ejeção duram minutos a horas; a escuridão e o frio, meses a anos. Recuperação: em Caravaca, o oxigênio no fundo do mar voltou em poucas centenas de anos (Sosa-Montes De Oca et al. 2013); na própria cratera, a vida voltou em anos e a produtividade em cerca de 30 mil anos (Lowery et al. 2018); a diversidade de muitos grupos levou milhões de anos (Lowery e Fraass 2019). Cada número vale para um lugar e um indicador, não para o planeta inteiro.</dd>
+    </dl>
+
+    <figure class="linhas detalhes-linhagens" id="linhas" aria-label="Esquema sem escala: algumas linhagens de aves terminam no limite K–Pg; outras o atravessam e se diversificam até hoje.">
+      <svg viewBox="0 0 360 66" aria-hidden="true" focusable="false">
+        <g class="ext"><path d="M4 16H118"/><path d="M4 25H118"/><path d="M4 34H118"/></g>
+        <path class="kpg" d="M120 6V62"/>
+        <g class="sob"><path d="M4 43H350"/><path d="M4 51H350"/><path d="M4 59C130 59 150 59 170 59C200 59 214 47 250 45C290 43 320 44 350 44"/><path d="M170 59C214 59 230 53 350 53"/><path d="M200 59C240 60 300 62 350 62"/><path d="M226 59C260 58 300 58 342 58"/></g>
+        <circle class="hoje" cx="342" cy="58" r="3.2"/>
+        <text x="126" y="11">limite K–Pg</text><text x="350" y="11" text-anchor="end">hoje</text>
+      </svg>
+      <figcaption>Esquema sem escala. Cinza: linhagens extintas no limite. Claras: as que o atravessaram. Ponto: uma ave de hoje.</figcaption>
+    </figure>
+    <h3>Tempo</h3>
+    <p><span class="m est">estimativa</span> 66,0 Ma é a idade do limite na carta da ICS (2026/06). Datações argônio-argônio situam impacto e limite juntos, por volta de 66,04 Ma, dentro das incertezas (Renne et al. 2013; Sprain et al. 2018). O impacto marca o limite; seus efeitos não foram um instante global.</p>
+
+    <p><label>Fluidez <select id="fps-limit"><option value="60">60 FPS · meta</option><option value="30">30 FPS · economia</option></select></label></p>
+    <h3>Modelos 3D e licenças</h3>
+    <ul class="models" id="lista-modelos">
+<li><b>Corte interpretativo de Chicxulub</b> · código e geometria originais MESOZOICO / Codex, CC BY 4.0. Vertical ampliada 12× para leitura. Cobertura sedimentar, rochas de impacto e embasamento são unidades esquemáticas: as interfaces fora do poço não são uma seção medida. A abertura retira virtualmente uma parte da superfície atual; não existe uma depressão aberta visível nessa paisagem. O corte é opcional: aparece só pelo botão “Ver corte esquemático”, no quadro de leitura do momento 4. Local M0077A: 21°27,009′ N, 89°56,962′ O; profundidade final 1.334,69 m abaixo do fundo marinho. <a href="https://publications.iodp.org/proceedings/364/101/364_101.html">Gulick et al., Expedição 364 (2017)</a>. A localização geral da estrutura reúne geofísica e perfurações; <a href="https://www.lpi.usra.edu/science/kring/Chicxulub/discovery/">síntese da descoberta, LPI</a>. Cor e geometria simplificadas são escolhas explicativas, não tomografia. Caravaca e Trinidad, mostrados a seguir, são outros registros do limite.</li>
+      <li><b>Asteroide</b> · geometria procedural gerada no navegador pelo código da maquete (src/js/asteroid.js), sem arquivo externo. Licença: CC BY 4.0, MESOZOICO. Forma hipotética.</li>
+      <li><b>bloco-camadas-kpg.glb</b> · peça de rocha esquemática original gerada por código, com sequência inspirada em Caravaca. Licença: CC BY 4.0, MESOZOICO. A referência é a <a href="https://doi.org/10.1371/journal.pone.0082242.g001" target="_blank" rel="noopener">figura 1 de Sosa-Montes De Oca, Martínez-Ruiz e Rodríguez-Tovar (2013)</a>, CC BY conforme a página do periódico. <a href="img/caravaca-figura-1-integral.jpg" target="_blank" rel="noopener">Figura integral da cópia de pesquisa</a>. O bloco não é um recorte tridimensional da fotografia; espessuras e cores foram modeladas para explicação.</li>
+<li class="fonte-aguia"><b>White Eagle · avaliação local</b> · Representam descendentes atuais; não são reconstruções de indivíduos que sobreviveram ao K–Pg.<ul><li>“White Eagle Animation Fast Fly”, de GremorySaiyan, Sketchfab. O pacote recebido não traz arquivo de licença, e o FBX guarda caminhos e nomes de textura do jogo comercial <i>Bless Unleashed</i>: provável modelo extraído de jogo. Usado só para avaliação privada; não publicar sem confirmar os direitos. O nome do arquivo não identifica uma espécie, e a prévia não atribui uma. Origem e licença continuam pendentes. Conversão corrigida em 31/10: 20 canais de rotação (coluna, pescoço, cabeça, pernas e dedos) se perdiam, e por isso as pernas apareciam penduradas; com eles, as pernas ficam recolhidas sob a cauda, como o autor animou. O ciclo de batida (0,6 s) ganhou uma emenda de 0,1 s, e a pose de planeio foi montada no próprio esqueleto. <code>modelos/ave-candidata-aguia.glb</code>.</li></ul></li>
+
+      <li><b>Rock Face 01</b> · <a href="https://polyhaven.com/a/rock_face_01">Dario Barresi / Poly Haven, arquivo original</a>, CC0. Conversão do arquivo Blender recebido para GLB, textura de cor 2048 px e normal 1024 px, WebP; escala e colocação editoriais no vale. Rocha genérica, sem identificação geológica K–Pg.</li>
+<li><b>Vale de mata (momento 6)</b> · relevo, rio, água e céu gerados por código (<code>living-valley.js</code>), MESOZOICO / Claude; refinamento por Codex, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Árvores: impostores (<code>vale-arvores.js</code>, atlas por <code>ferramentas/vale/impostores.py</code>) de modelos da Poly Haven, <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a>: <a href="https://polyhaven.com/a/jacaranda_tree" target="_blank" rel="noopener">Jacaranda Tree</a> (Rico Cilliers, orientação de Rob Tuytel), <a href="https://polyhaven.com/a/island_tree_01" target="_blank" rel="noopener">Island Tree 01</a> e <a href="https://polyhaven.com/a/island_tree_02" target="_blank" rel="noopener">Island Tree 02</a> (Rob Tuytel e Rico Cilliers), <a href="https://polyhaven.com/a/tree_small_02" target="_blank" rel="noopener">Tree Small 02</a> (Rico Cilliers). Pedras: <a href="https://polyhaven.com/a/rock_moss_set_01" target="_blank" rel="noopener">Rock Moss Set 01</a> (Kless Gyzen). Cascalho das margens: <a href="https://polyhaven.com/a/river_small_rocks" target="_blank" rel="noopener">River Small Rocks</a> (Rob Tuytel e Rico Cilliers). Todos CC0. Lugar imaginado, sem georreferência.</li>
+      
+<li><b>Queda e explosão do momento 2</b> · revisão 10: câmera e tempo da queda (<code>camera2.js</code>), explosão em volume calculado na placa de vídeo (<code>impact11.js</code>, revisão 11), original; cavidade e cortina adaptadas do código da revisão 7; ejeção balística da revisão 8, MESOZOICO, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Representação editorial informada por estudos de impacto, não filmagem nem simulação hidrodinâmica. Nenhuma imagem externa nova.</li>
+      <li><b>Globo, nuvens, atmosfera, pluma, faixa de partículas, poeira</b> · geometria e shaders procedurais gerados em tempo de execução, originais (código desta maquete).</li>
+      <li><b>Terra antiga · abertura e aproximação (revisão local da Terra)</b> · Christopher R. Scotese e Nicky M. Wright (2018), <i>PALEOMAP Paleodigital Elevation Models for the Phanerozoic</i>, mapa 16, grade 6 minutos de arco. <a href="https://zenodo.org/records/5460860" target="_blank" rel="noopener">Original e licença</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Adaptações MESOZOICO: rasterização esférica, paleta interpretativa, sombreado moderado do relevo estimado, compressão WebP e manutenção do ajuste local de plataforma marinha. Nuvens: desenho procedural original MESOZOICO, CC BY 4.0; não observadas em 66 Ma. NASA/Reto Stöckli, <a href="https://science.nasa.gov/earth/earth-observatory/the-blue-marble-2181/" target="_blank" rel="noopener">Blue Marble</a>, somente referência visual de nuvens, luz e cores, sem pixels reutilizados na Terra antiga.</li>
+      <li><b>Base preservada no momento 3 e deriva até hoje</b> · modelo de Müller et al. (2019), reconstruído com pyGPlates 1.0.0; máscara e superfície herdadas da revisão 11. <a href="https://zenodo.org/records/10525286" target="_blank" rel="noopener">Registro do modelo</a>, licença CC BY 4.0 conferida no registro original nesta revisão (versão encaminhada ao registro 11601026). A máscara herdada gira costas atuais; não fornece litorais exatos de cada época. A deriva é uma passagem editorial entre reconstruções aproximadas, não um vídeo contínuo de costas observadas.</li>
+      <li><b>Observações documentais de Yucatán, fora do globo</b> · NASA EOSDIS/GIBS, MODIS/Terra Corrected Reflectance True Color, 31/10/2021. JPEGs preservados, com nuvens e sedimentos observados. <a href="img/yucatan-modis-2021-10-31.jpg" target="_blank" rel="noopener">Yucatán integral</a> · <a href="img/golfo-modis-contexto-2021-10-31.jpg" target="_blank" rel="noopener">Golfo integral</a> · <a href="https://science.nasa.gov/earth/earth-observatory/sediment-swirls-off-the-yucatan-149114/" target="_blank" rel="noopener">Legenda NASA</a> · <a href="https://www.nasa.gov/nasa-brand-center/images-and-media/" target="_blank" rel="noopener">Condições de uso NASA</a>. Não representam a Terra antiga e não compõem a superfície animada.</li>
+      <li><b>Terra de hoje (momento 4)</b> · NASA / Reto Stöckli, Blue Marble Next Generation, agosto de 2004. Mosaico mensal MODIS, sem nuvens, sem o relevo sombreado adicional. <a href="https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/BlueMarble_NextGeneration.json" target="_blank" rel="noopener">Metadados da camada</a> · <a href="https://neo.gsfc.nasa.gov/view.php?datasetId=BlueMarbleNG&amp;date=2004-08-01" target="_blank" rel="noopener">Origem e autoria</a> · <a href="https://www.nasa.gov/nasa-brand-center/images-and-media/" target="_blank" rel="noopener">Condições NASA: reutilização educativa com crédito, sem endosso</a>. Exportações GIBS WMS EPSG:4326: <a href="img/terra-hoje-bmng-global.jpg" target="_blank" rel="noopener">global 4096×2048</a> e <a href="img/terra-hoje-bmng-golfo.jpg" target="_blank" rel="noopener">região 2048×1877</a>, 101° O–77° O e 11° N–33° N (≈1,3 km/pixel em latitude; não a resolução original de 500 m). JPEGs sem retoque. Adaptações de apresentação: projeção esférica, mistura dos níveis de resolução, cor uniforme nas áreas quase pretas do oceano profundo, luz e nuvens procedurais. Não é observação de um instante nem mapa de batimetria.</li>
+      <li><b>Máscara de terra e litoral atual</b> · Natural Earth 1:50m (land, coastline), domínio público.</li>
+      <li><b>Bibliotecas</b> · three.js r170 (MIT), GSAP 3.12.5 (licença padrão GSAP, sem custo), cópias locais.</li>
+      <li><b>Tipografia</b> · Manrope e DM Sans, SIL Open Font License, cópias do site.</li>
+    </ul>
+    <p id="foto-credito-painel"></p>
+
+    <h3>Fontes</h3>
+    <ol class="refs">
+      <li>Scotese, C. R.; Wright, N. M. (2018). <i>PALEOMAP Paleodigital Elevation Models (PaleoDEMs) for the Phanerozoic</i>. PALEOMAP Project. <a href="https://www.earthbyte.org/webdav/ftp/Data_Collections/Scotese_Wright_2018_PaleoDEM/Scotese_Wright2018_PALEOMAP_PaleoDEMs.pdf" target="_blank" rel="noopener">Relatório, tabela 1 e limites do método</a> · <a href="https://doi.org/10.5281/zenodo.5460860" target="_blank" rel="noopener">Dados, CC BY 4.0</a>.</li>
+      <li>Alvarez, L. W. et al. (1980). Extraterrestrial cause for the Cretaceous–Tertiary extinction. <i>Science</i> 208:1095–1108. doi:10.1126/science.208.4448.1095</li>
+      <li>Hildebrand, A. R. et al. (1991). Chicxulub Crater: a possible Cretaceous/Tertiary boundary impact crater on the Yucatán Peninsula, Mexico. <i>Geology</i> 19:867–871.</li>
+      <li>Schulte, P. et al. (2010). The Chicxulub asteroid impact and mass extinction at the Cretaceous–Paleogene boundary. <i>Science</i> 327:1214–1218. doi:10.1126/science.1177265</li>
+      <li>Renne, P. R. et al. (2013). Time scales of critical events around the Cretaceous–Paleogene boundary. <i>Science</i> 339:684–687.</li>
+      <li>Morgan, J. V. et al. (2016). The formation of peak rings in large impact craters. <i>Science</i> 354:878–882. (Expedição 364, poço M0077A)</li>
+      <li>Brugger, J.; Feulner, G.; Petri, S. (2017). Baby, it's cold outside: climate model simulations of the effects of the asteroid impact at the end of the Cretaceous. <i>Geophysical Research Letters</i> 44:419–427.</li>
+      <li>Sprain, C. J. et al. (2018). High-resolution chronostratigraphy of the terrestrial Cretaceous–Paleogene transition. <i>GSA Bulletin</i> 130:1615–1644.</li>
+      <li>Collins, G. S. et al. (2020). A steeply-inclined trajectory for the Chicxulub impact. <i>Nature Communications</i> 11:1480. <a href="https://doi.org/10.1038/s41467-020-15269-x" target="_blank" rel="noopener">Estudo</a> · <a href="https://repository.hou.usra.edu/server/api/core/bitstreams/d77a2868-59cc-4a72-8425-f12771b77699/content" target="_blank" rel="noopener">Texto no repositório USRA</a>.</li>
+      <li>Artemieva, N.; Morgan, J.; Expedition 364 Science Party (2017). Quantifying the release of climate-active gases by large meteorite impacts with a case study of Chicxulub. <i>Geophysical Research Letters</i> 44:10180–10188. <a href="https://doi.org/10.1002/2017GL074879" target="_blank" rel="noopener">Estudo</a>.</li>
+      <li>Melosh, H. J. (1989). <i>Impact Cratering: A Geologic Process</i>. Oxford University Press.</li>
+      <li>Pierazzo, E.; Melosh, H. J. (2000). Understanding oblique impacts from experiments, observations, and modeling. <i>Annual Review of Earth and Planetary Sciences</i> 28:141–167. (consultado pelo resumo)</li>
+
+      <li>Morgan, J.; Lana, C.; Artemieva, N. (2006). Ejecta distribution from the Chicxulub impact. <i>Geophysical Research Abstracts</i> 8, EGU06-J-02281 (resumo).</li>
+      <li>Gulick, S. P. S. et al. (2019). The first day of the Cenozoic. <i>PNAS</i> 116(39):19342–19351. doi:10.1073/pnas.1909479116</li>
+      <li>Lunar and Planetary Institute (2000). <i>Catastrophic Events and Mass Extinctions: Impacts and Beyond</i>, LPI Contribution 1053 (volume de resumos; NASA NTRS 20010007049).</li>
+      <li>Senel, C. B. et al. (2023). Chicxulub impact winter sustained by fine silicate dust. <i>Nature Geoscience</i> 16:1033–1040. doi:10.1038/s41561-023-01290-4 (consultado pelo resumo; o texto completo não estava acessível).</li>
+      <li>Baier, D. B.; Gatesy, S. M.; Dial, K. P. (2013). <i>Three-Dimensional, High-Resolution Skeletal Kinematics of the Avian Wing and Shoulder during Ascending Flapping Flight and Uphill Flap-Running</i>. <a href="https://doi.org/10.1371/journal.pone.0063982" target="_blank" rel="noopener">PLoS ONE 8(5): e63982</a>. Referência qualitativa para articular ombro, cotovelo e punho. O estudo mede <i>Alectoris chukar</i>, não a ave de rapina desta cena: a animação não reproduz medidas da espécie representada, e nenhuma figura do artigo foi reutilizada.</li>
+      <li>Sosa-Montes De Oca, C.; Martínez-Ruiz, F.; Rodríguez-Tovar, F. J. (2013). Bottom-water conditions in a marine basin after the Cretaceous–Paleogene impact event: timing the recovery of oxygen levels and productivity. <i>PLoS ONE</i> 8(12): e82242. doi:10.1371/journal.pone.0082242. CC BY 4.0. (Descrição da seção de Caravaca usada no bloco; a figura 1 não é mostrada.)</li>
+      <li>Lowery, C. M. et al. (2018). Rapid recovery of life at ground zero of the end-Cretaceous mass extinction. <i>Nature</i> 558:288–291.</li>
+      <li>Lowery, C. M.; Fraass, A. J. (2019). Morphospace expansion paces taxonomic recovery after end Cretaceous mass extinction. <i>Nature Ecology &amp; Evolution</i> 3:900–904.</li>
+      <li>Rodríguez-Tovar, F. J.; Uchman, A. (2008). Bioturbational disturbance of the Cretaceous–Palaeogene (K–Pg) boundary layer: implications for the interpretation of the K–Pg boundary impact event. <i>Geobios</i> 41:661–667.</li>
+      
+      
+      
+      
+      <li>Longrich, N. R.; Tokaryk, T.; Field, D. J. (2011). Mass extinction of birds at the Cretaceous–Paleogene (K–Pg) boundary. <i>PNAS</i> 108:15253–15257.</li>
+      <li>Müller, R. D. et al. (2019). A global plate model including lithospheric deformation along major rifts and orogens since the Triassic. <i>Tectonics</i> 38:1884–1907. doi:10.1029/2018TC005462. Arquivos do modelo: EarthByte, doi:10.5281/zenodo.10525286.</li>
+      <li>Müller, R. D. et al. (2018). GPlates: building a virtual Earth through deep time. <i>Geochemistry, Geophysics, Geosystems</i> 19:2243–2261. (pyGPlates)</li>
+      <li>International Commission on Stratigraphy. Carta cronoestratigráfica 2026/06.</li>
+      <li>Gulick, S. P. S.; Morgan, J. V.; Mellett, C. L.; Expedition 364 Scientists (2017). Chicxulub: Drilling the K-Pg Impact Crater. Preliminary Report, IODP. doi:10.14379/iodp.pr.364.2017. Proceedings vol. 364, doi:10.14379/iodp.proc.364.2017.</li>
+      <li>Stiller, J. et al. (2024). Complexity of avian evolution revealed by family-level genomes. <i>Nature</i>. doi:10.1038/s41586-024-07323-1 (consultado pelo resumo).</li>
+      <li>Natural Earth. Dados vetoriais 1:50m, domínio público.</li>
+      <li>NASA Earth Observatory / Visible Earth. Blue Marble: Next Generation. NOAA NCEI. ETOPO1 Global Relief Model (Amante e Eakins 2009). Shaded relief: shadedrelief.com. Cópias redistribuídas em basemap-data 2.0.0 (matplotlib/basemap, MIT).</li>
+    </ol>
+
+    <h3>Movimento</h3>
+    <p>Com “reduzir movimento” ativo no sistema, a sequência não roda sozinha: cada momento aparece parado, e a rolagem e os controles passam de um quadro ao próximo. <button class="link" id="btn-movimento" aria-pressed="false">Ver com movimento reduzido</button></p>
+    <p class="keys">Um momento por vez: “Continuar” (ou → ↓) toca a passagem e para no quadro de leitura; durante a passagem, “Concluir passagem” chega ao quadro de leitura mais depressa. Um gesto de rolagem avança um momento; a inércia do mouse ou do touchpad não pula vários. “Assistir sequência” toca tudo sozinho; rolar ou apertar Continuar durante a reprodução leva ao quadro de leitura seguinte, sem salto. Teclado: → ↓ Page Down avançam · ← ↑ Page Up voltam · espaço ou K assiste e pausa · Home volta à abertura · 1 a 6 vão direto · Esc fecha este painel. No celular, deslize para cima ou para baixo.</p>
+  </div>
+</aside>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-labelledby="lb-cap">
+  <figure>
+    <img id="lb-img" alt="">
+    <figcaption id="lb-cap"></figcaption>
+  </figure>
+  <button class="close" id="lb-close">Fechar</button>
+</div>
+
+<noscript><p class="noscript">Esta maquete precisa de JavaScript e WebGL.</p></noscript>
+
+<script src="js/dados-terra-raster.js" defer></script>
+
+<script src="js/dados-paleo.js" defer></script>
+<script src="js/foto-limite.js" defer></script>
+
+
+
+<script src="js/kpg.js?v=site1" defer></script>
+<script src="js/conferir-local.js"></script>
+</body>
+</html>
+
+
+
+

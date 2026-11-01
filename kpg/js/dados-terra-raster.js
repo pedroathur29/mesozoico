@@ -1,0 +1,1 @@
+window.KPG_RASTER={"aux": "img/dados/e1d6466692357a56.webp", "golfoAux": "img/dados/cd198f4392f29453.webp"};
