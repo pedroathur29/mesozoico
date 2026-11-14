@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildPlaceholderDino } from './dino.js';
 import { TIERS } from './quality.js';
+import { createRig } from './anim.js';
 
 // Cena única e fixa. A rolagem só muda o "estado" (câmera, giro, luz, humano, cenário).
 export function createScene(canvas, tier) {
@@ -78,7 +79,8 @@ export function createScene(canvas, tier) {
   }
 
   // aplica um estado interpolado vindo do scroll
-  function apply(s, time) {
+  let rig = null; // animação procedural, criada quando o modelo real carrega
+  function apply(s, time, motion) {
     // em tela estreita, afasta a câmera para o dino caber na largura
     const k = state.narrow ? Math.pow(1.78 / camera.aspect, 0.62) : 1;
     camera.position.set(
@@ -93,6 +95,7 @@ export function createScene(canvas, tier) {
     else camera.setViewOffset(w, h, -s.shift * w * 0.5, 0, w, h);
     camera.updateProjectionMatrix();
     dinoPivot.rotation.set(s.pitch, s.rot, s.roll);
+    if (rig && motion) rig.update(time / 1000, motion);
     // a sombra de contato escurece mais em fundo claro
     const lum = (s.bg[0] + s.bg[1] + s.bg[2]) / 765;
     contact.material.opacity = 0.16 + 0.34 * lum;
@@ -104,12 +107,13 @@ export function createScene(canvas, tier) {
 
   function setModel(obj) {
     dinoPivot.remove(dino);
+    rig = createRig(obj); // antes de pendurar na cena: mede os ossos com o dino sem giro
     dino = obj; dino.position.y = -PIVOT_Y; dinoPivot.add(dino);
   }
 
   applyTier(tier);
   return {
-    renderer, scene, camera, apply, resize, setTier: applyTier, setModel,
+    renderer, scene, camera, apply, resize, setTier: applyTier, setModel, rig: () => rig,
     // limites do dino no mundo (para depuração e ajuste de câmera): [[minx,miny,minz],[maxx,maxy,maxz]]
     bounds: () => { dinoPivot.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(dinoPivot, true); return [b.min.toArray(), b.max.toArray()]; },
     render: () => renderer.render(scene, camera),

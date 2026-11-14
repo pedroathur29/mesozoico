@@ -9,7 +9,8 @@
 //   bg / ink / acc: cor de fundo, do texto e de destaque do ato (paleta OSSO ou NOITE, ver abaixo)
 //   glow: cor do brilho de fundo, glowA/X/Y: intensidade e posição (%)
 //   light: intensidade das luzes   human: 0..1 silhueta humana (ato 3)
-const D = { rot: 0, pitch: 0, roll: 0, shift: 0.2, fov: 34, glow: [120, 170, 215], glowA: 0.16, glowX: 72, glowY: 50, light: 1, human: 0 };
+//   walk: 0..1 o dino anda enquanto a página rola   roar: 0..1 rugido (ver src/anim.js)
+const D = { rot: 0, pitch: 0, roll: 0, shift: 0.2, fov: 34, glow: [120, 170, 215], glowA: 0.16, glowX: 72, glowY: 50, light: 1, human: 0, walk: 0, roar: 0 };
 
 // Duas paletas que se alternam a cada ato:
 //   OSSO  = claro, tinta escura, laranja queimado (sem brilho)
@@ -33,9 +34,9 @@ export const KEYFRAMES = [
   K(1, 0.0,  OSSO,  { cam: [0, 2.2, 10.8],    look: [0, 1.7, 0],     shift: 0.06, fov: 34 }),
   K(1, 1.0,  OSSO,  { cam: [3.0, 2.4, 8.6],   look: [1.2, 1.8, 0],   rot: 0.15, shift: 0.1, fov: 34 }),
   // 2 · Corpo inteiro (NOITE): órbita completa, passando por cima
-  K(2, 0.05, NOITE, { cam: [0, 2.7, 13],      look: [0, 1.7, 0],     rot: 0,     shift: 0.22, fov: 36, glowY: 55 }),
-  K(2, 0.5,  NOITE, { cam: [0, 8, 11.5],      look: [0, 1.4, 0],     rot: 3.14,  shift: 0.22, fov: 36, glowY: 52 }),
-  K(2, 0.95, NOITE, { cam: [0, 2.7, 13],      look: [0, 1.7, 0],     rot: 6.283, shift: 0.22, fov: 36, glowY: 55 }),
+  K(2, 0.05, NOITE, { cam: [0, 2.7, 13],      look: [0, 1.7, 0],     rot: 0,     shift: 0.22, fov: 36, glowY: 55, walk: 1 }),
+  K(2, 0.5,  NOITE, { cam: [0, 8, 11.5],      look: [0, 1.4, 0],     rot: 3.14,  shift: 0.22, fov: 36, glowY: 52, walk: 1 }),
+  K(2, 0.95, NOITE, { cam: [0, 2.7, 13],      look: [0, 1.7, 0],     rot: 6.283, shift: 0.22, fov: 36, glowY: 55, walk: 1 }),
   // 3 · Escala (OSSO): perfil limpo com o humano; depois vista alta e inclinada
   K(3, 0.05, OSSO,  { cam: [0, 1.9, 21],      look: [0, 1.6, 0],     rot: 0,     shift: -0.3,  fov: 36, human: 1 }),
   K(3, 0.95, OSSO,  { cam: [6.5, 10, 15],     look: [0.5, 1.4, 0],   rot: 0,     roll: -0.12, shift: -0.38, fov: 34, human: 1 }),
@@ -44,13 +45,13 @@ export const KEYFRAMES = [
   K(4, 0.5,  NOITE, { cam: [3.0, 3.6, 4.6],   look: [-0.4, 2.4, 0],  rot: -0.4,  shift: 0.34, fov: 28, glowY: 45 }),
   K(4, 0.95, NOITE, { cam: [0.8, 6.2, 3.6],   look: [-0.6, 2.2, 0],  rot: -0.8,  shift: 0.3, fov: 28, glowY: 45 }),
   // 5 · Cabeça (OSSO): de frente, 3/4 e o outro lado da mandíbula
-  K(5, 0.05, OSSO,  { cam: [9.5, 2.8, 1.6],   look: [3.9, 2.6, 0],   rot: 0,     shift: -0.2, fov: 28 }),
-  K(5, 0.5,  OSSO,  { cam: [7.6, 3.2, 4.2],   look: [3.9, 2.6, 0],   rot: 0,     roll: 0.1, shift: -0.2, fov: 28 }),
-  K(5, 0.95, OSSO,  { cam: [9.4, 1.7, -1.5],  look: [3.9, 2.5, 0],   rot: 0,     shift: -0.34, fov: 28 }),
+  K(5, 0.05, OSSO,  { cam: [9.5, 2.8, 1.6],   look: [3.9, 2.6, 0],   rot: 0,     shift: -0.2, fov: 28, roar: 0.1 }),
+  K(5, 0.5,  OSSO,  { cam: [7.6, 3.2, 4.2],   look: [3.9, 2.6, 0],   rot: 0,     roll: 0.1, shift: -0.2, fov: 28, roar: 0.5 }),
+  K(5, 0.95, OSSO,  { cam: [9.4, 1.7, -1.5],  look: [3.9, 2.5, 0],   rot: 0,     shift: -0.34, fov: 28, roar: 1 }),
   // 6 · Braços e garras (NOITE): close lateral que varre da cabeça à cauda
   K(6, 0.05, NOITE, { cam: [4.6, 1.9, 5.6],   look: [1.0, 1.8, 0.3], rot: 0,     shift: 0.34, fov: 30, glowY: 55 }),
   K(6, 0.95, NOITE, { cam: [-0.4, 2.0, 7.0],  look: [-1.4, 1.7, 0],  rot: 0,     shift: 0.34, fov: 32, glowY: 55 }),
   // 7 · Habitat (OSSO): a câmera sobe e recua, o dino diminui no espaço vazio
-  K(7, 0.05, OSSO,  { cam: [-3, 5, 22],       look: [0, 1.5, 0],     rot: 0.5,   shift: -0.2, fov: 36, light: 0.9 }),
-  K(7, 1.0,  OSSO,  { cam: [-6, 9, 32],       look: [0, 1.5, 0],     rot: 0.8,   shift: -0.2, fov: 38, light: 0.9 }),
+  K(7, 0.05, OSSO,  { cam: [-3, 5, 22],       look: [0, 1.5, 0],     rot: 0.5,   shift: -0.2, fov: 36, light: 0.9, walk: 1 }),
+  K(7, 1.0,  OSSO,  { cam: [-6, 9, 32],       look: [0, 1.5, 0],     rot: 0.8,   shift: -0.2, fov: 38, light: 0.9, walk: 1 }),
 ];

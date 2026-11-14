@@ -33,6 +33,7 @@ src/main.js           loading, scroll suave, revelação de textos, loop de dese
 src/acts.js           coreografia: câmera, giro e cores por ato  ← ajuste aqui o "movimento"
 src/scene.js          cena Three.js (luzes, sombra de contato, humano de escala)
 src/dino.js           carregador do .glb (e um placeholder, usado se o modelo faltar)
+src/anim.js           animação por código: respiração, cauda, caminhada ligada à rolagem e rugido
 src/quality.js        qualidade adaptativa (3 níveis, mede fps)
 src/style.css         visual: fundo escuro, dino branco, destaque azul-gelo
 public/assets/models/ yutyrannus.glb
@@ -46,6 +47,6 @@ Valores incertos levam o selo **estimativa**, **hipótese** ou **incerta**. A co
 
 ## Pendências
 - Confirmar autor, link e licença do modelo 3D (ver `CREDITS.md`).
-- Animação do dino (respiração, cauda, andar, rugir): em andamento.
+- Animação do dino: primeira versão feita por código (`fonte/src/anim.js`); falta ajuste fino vendo em movimento.
 - Imagens de apoio e revisão final dos textos com fontes.
 - Teste em celulares reais.

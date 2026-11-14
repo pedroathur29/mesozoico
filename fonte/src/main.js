@@ -67,7 +67,7 @@ function measure() {
 const VEC = ['cam', 'look', 'glow', 'bg', 'ink', 'acc'];
 const THEME = ['bg', 'ink', 'acc']; // cores do tema trocam rápido (quase um corte), o resto flui
 const sharp = (r) => smooth(Math.min(1, Math.max(0, (r - 0.38) / 0.24)));
-const NUM = ['rot', 'pitch', 'roll', 'shift', 'fov', 'glowA', 'glowX', 'glowY', 'light', 'human'];
+const NUM = ['rot', 'pitch', 'roll', 'shift', 'fov', 'glowA', 'glowX', 'glowY', 'light', 'human', 'walk', 'roar'];
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpArr = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
 const smooth = (t) => t * t * (3 - 2 * t);
@@ -131,13 +131,23 @@ function setupReveals() {
 }
 
 /* ---------- loop de desenho ---------- */
+// movimento do dino: a fase do passo avança com a rolagem, e ele para (suavemente) quando a página para
+const motion = { phase: 0, moving: 0, lastY: null, idle: reduce ? 0 : 1 };
+const QS = new URLSearchParams(location.search);
 function frame(now) {
   if (document.hidden) return;
   const y = lenis ? lenis.scroll : scrollY;
+  const dy = motion.lastY === null ? 0 : Math.abs(y - motion.lastY);
+  motion.lastY = y;
+  motion.phase += Math.min(dy, 120) * 0.011;            // ~570 px de rolagem = um ciclo completo (dois passos)
+  motion.moving += ((dy > 0.4 ? 1 : 0) - motion.moving) * (dy > 0.4 ? 0.2 : 0.06);
   const target = stateAt(y);
   const s = follow(target, reduce || DEBUG ? 1 : 0.14); // ?debug: sem atraso (testes em máquinas lentas)
   paintGlow(s);
-  gl.apply(s, now);
+  const m = { walk: reduce ? 0 : s.walk * motion.moving, roar: s.roar, phase: motion.phase, idle: motion.idle };
+  // ?debug&walk=1&phase=1.5&roar=1&t=2 fixa a pose (para capturas de teste)
+  if (DEBUG) for (const k of ['walk', 'phase', 'roar', 'idle']) if (QS.has(k)) m[k] = +QS.get(k);
+  gl.apply(s, DEBUG && QS.has('t') ? +QS.get('t') * 1000 : now, m);
   gl.render();
   monitor.tick(now);
 }
