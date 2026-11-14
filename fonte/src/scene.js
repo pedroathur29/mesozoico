@@ -6,6 +6,30 @@ import { createRig } from './anim.js';
 // Onde fica a pessoa de 1,75 m do ato 3: um pouco à frente do focinho, do lado da câmera.
 const HUMAN = { x: 5.0, z: 1.0, height: 1.75 };
 
+// Pontos do corpo onde as anotações se prendem: [osso, posição em repouso no espaço do dino (m)].
+const ANCHORS = {
+  feathers: [/^Spine_01/, [0.5, 2.74, 0]],
+  crest: [/^Head_/, [4.15, 2.9, 0]],
+  teeth: [/^Head_/, [4.2, 2.48, 0.22]],
+  hand: [/^r_FrontLeg_Ball_/, [2.72, 0.95, 0.52]],
+};
+
+// rótulo de texto como sprite (usado na régua do ato 3)
+function textSprite(text, w) {
+  const c = document.createElement('canvas'); c.width = 320; c.height = 80;
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const draw = () => {
+    const g = c.getContext('2d'); g.clearRect(0, 0, 320, 80);
+    g.font = '600 40px "JetBrains Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+    g.fillText(text, 160, 42); tex.needsUpdate = true;
+  };
+  draw();
+  if (document.fonts && document.fonts.load) document.fonts.load('600 40px "JetBrains Mono"').then(draw).catch(() => {});
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: 0x9fd3ff, transparent: true, depthWrite: false }));
+  s.scale.set(w, w / 4, 1);
+  return s;
+}
+
 // textura de mancha radial (usada na sombra de contato e na poça de luz do chão)
 function radialTexture(stops) {
   const c = document.createElement('canvas'); c.width = c.height = 128;
@@ -82,7 +106,24 @@ export function createScene(canvas, tier) {
   human.visible = false;
   scene.add(human);
 
+  // régua do ato 3: linha de 9 m no chão, com um traço por metro, e os rótulos das duas medidas
+  const ruler = new THREE.Group();
+  const rulerMat = new THREE.MeshBasicMaterial({ color: 0x9fd3ff, transparent: true, depthWrite: false });
+  {
+    const bar = (w, d, x, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), rulerMat); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.03, z); ruler.add(m); };
+    const Z = 1.7;
+    bar(9, 0.035, 0, Z);
+    for (let i = 0; i <= 9; i++) bar(0.035, i === 0 || i === 9 ? 0.5 : 0.2, -4.5 + i, Z);
+    const l9 = textSprite('9 m', 2.4); l9.position.set(0, -0.55, Z); ruler.add(l9);
+    const lh = textSprite('1,75 m', 2.4); lh.position.set(HUMAN.x, HUMAN.height + 0.42, HUMAN.z); ruler.add(lh);
+    ruler.userData.sprites = [l9, lh];
+  }
+  ruler.visible = false;
+  scene.add(ruler);
+
   const state = { tier, w: 1, h: 1, narrow: false, lastRot: null, spin: 0 };
+  let feather = null;      // malha da camada de penas (some no nível baixo de qualidade)
+  const anchors = {};      // nome -> { bone, local }
   const _t = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _h = new THREE.Vector3();
 
   function applyTier(t) {
@@ -91,6 +132,7 @@ export function createScene(canvas, tier) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, T.dpr));
     renderer.shadowMap.enabled = T.shadows; key.castShadow = T.shadows;
     renderer.shadowMap.needsUpdate = true;
+    if (feather) feather.visible = T.feathers;
     resize();
   }
   function resize() {
@@ -146,8 +188,10 @@ export function createScene(canvas, tier) {
     pool.material.opacity = 0.11 * (1 - lum);
     key.intensity = 0.4 + 2.0 * s.light; rim.intensity = 1.0 + 2.4 * s.light;
 
-    human.visible = s.human > 0.01;
+    human.visible = ruler.visible = s.human > 0.01;
     if (human.visible) {
+      rulerMat.opacity = 0.8 * s.human;
+      ruler.userData.sprites.forEach((sp) => { sp.material.opacity = s.human; });
       humanMat.opacity = Math.min(1, s.human * 1.4);
       human.position.y = (1 - s.human) * -0.25;
       human.rotation.y = Math.atan2(camera.position.x - HUMAN.x, camera.position.z - HUMAN.z);
@@ -157,12 +201,29 @@ export function createScene(canvas, tier) {
   function setModel(obj) {
     dinoPivot.remove(dino);
     rig = createRig(obj); // antes de pendurar na cena: mede os ossos com o dino sem giro
+    // âncoras das anotações: guarda cada ponto no espaço do osso, para acompanhar a animação
+    obj.updateMatrixWorld(true);
+    const bones = []; obj.traverse((o) => { if (o.isBone) bones.push(o); if (o.isMesh && o.material && /Feather/i.test(o.material.name)) feather = o; });
+    for (const [name, [re, p]] of Object.entries(ANCHORS)) {
+      const bone = bones.find((b) => re.test(b.name));
+      if (bone) anchors[name] = { bone, local: bone.worldToLocal(obj.localToWorld(new THREE.Vector3(...p))) };
+    }
+    if (feather) feather.visible = TIERS[state.tier].feathers;
     dino = obj; dino.position.y = -PIVOT_Y; dinoPivot.add(dino);
   }
 
   applyTier(tier);
   return {
     renderer, scene, camera, apply, resize, setTier: applyTier, setModel, rig: () => rig,
+    // posição na tela (px) de um ponto do corpo; chamar depois de render(), quando as matrizes estão atualizadas
+    anchor(name, out) {
+      const a = anchors[name];
+      if (!a) return null;
+      _t.copy(a.local); a.bone.localToWorld(_t); _t.project(camera);
+      out.x = (_t.x + 1) / 2 * state.w; out.y = (1 - _t.y) / 2 * state.h;
+      out.visible = _t.z < 1 && _t.x > -0.96 && _t.x < 0.96 && _t.y > -0.9 && _t.y < 0.9;
+      return out;
+    },
     // limites do dino no mundo (para depuração e ajuste de câmera): [[minx,miny,minz],[maxx,maxy,maxz]]
     bounds: () => { dinoPivot.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(dinoPivot, true); return [b.min.toArray(), b.max.toArray()]; },
     render: () => renderer.render(scene, camera),

@@ -34,7 +34,7 @@ src/acts.js           coreografia: câmera, giro e cores por ato  ← ajuste aqu
 src/scene.js          cena Three.js (luzes, chão sugerido por luz e sombra, pessoa de escala, alvo do olhar)
 src/dino.js           carregador do .glb (e um placeholder, usado se o modelo faltar)
 src/anim.js           animação por código: respira, pisca, olha para a câmera, anda, ruge, fareja, sacode as penas, mexe as garras
-src/quality.js        qualidade adaptativa (3 níveis, mede fps)
+src/quality.js        qualidade adaptativa (3 níveis, mede fps; o nível baixo esconde a camada de penas)
 src/style.css         visual: fundo escuro, dino branco, destaque azul-gelo
 public/assets/models/ yutyrannus.glb
 tools/clean_model.py  prepara o modelo no Blender (tira a sela, apara as penas, clareia, reduz texturas)
@@ -45,12 +45,18 @@ tools/publicar.mjs    copia o build para a raiz
 - **Sempre:** respira, balança a cauda, pisca e vira a cabeça para a câmera (no computador, acompanha o mouse).
 - **Abertura:** entra andando pela esquerda quando o loading termina.
 - **Atos 2 e 7:** anda enquanto a página rola e para quando ela para. Ao girar, a cauda fica para trás.
-- **Ato 3:** abaixa a cabeça e fareja a pessoa de 1,75 m.
+- **Ato 3:** abaixa a cabeça e fareja a pessoa de 1,75 m. Uma régua no chão marca os 9 m.
 - **Ato 4:** sacode o corpo de tempos em tempos.
 - **Ato 5:** abre a boca aos poucos e termina rugindo de frente.
 - **Ato 6:** estende os braços e abre e fecha as garras.
 
 Com `prefers-reduced-motion`, só ficam as poses ligadas à rolagem.
+
+## Elementos de documentário
+- **Anotações de anatomia** presas ao corpo do dino (filamentos, crista nasal, dentes, três dedos). Os pontos ficam em `ANCHORS`, em `fonte/src/scene.js`.
+- **Linha do tempo do Mesozoico** no ato 7, com larguras proporcionais à duração de cada período (limites: 252, 201, 143 e 66 Ma).
+- **Fecho** com a fonte científica e o crédito do modelo.
+- Os números grandes contam de zero e os títulos entram palavra por palavra.
 
 ## Os 7 atos
 1 Abertura · 2 Corpo inteiro · 3 Escala · 4 Penas · 5 Cabeça · 6 Braços e garras · 7 Habitat.
@@ -59,5 +65,5 @@ Valores incertos levam o selo **estimativa**, **hipótese** ou **incerta**. A co
 ## Pendências
 - Confirmar autor, link e licença do modelo 3D (ver `CREDITS.md`).
 - Animação do dino: feita por código (`fonte/src/anim.js`) e conferida só em poses paradas; falta ajuste fino vendo em movimento.
-- Imagens de apoio e revisão final dos textos com fontes.
+- Imagens de apoio e revisão final dos textos com fontes. Conferir no artigo o comprimento dos filamentos (o site diz 15 a 20 cm).
 - Teste em celulares reais.

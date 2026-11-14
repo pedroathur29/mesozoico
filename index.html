@@ -7,9 +7,9 @@
   <meta name="description" content="Um passeio em 3D pelo Yutyrannus huali, o grande tiranossauroide emplumado do Cretáceo Inferior da China.">
   <meta name="theme-color" content="#0a141d">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <script type="module" crossorigin src="./assets/index-lv41OO4H.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/three-BhzH3ktw.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-D7Koe72v.css">
+  <script type="module" crossorigin src="./assets/index-C1Q63fm4.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/three-B7j4awkX.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-Dx2AGfwU.css">
 </head>
 <body>
   <!-- Loading: some quando a cena 3D estiver pronta -->
@@ -28,6 +28,14 @@
   </div>
   <canvas id="gl" aria-hidden="true"></canvas>
   <div class="grain" aria-hidden="true"></div>
+
+  <!-- anotações de anatomia: o JS prende cada uma a um ponto do corpo do dino (ver src/scene.js, ANCHORS) -->
+  <div class="callouts">
+    <p class="callout" data-callout="feathers" data-in="4"><i></i><span>Filamentos simples</span></p>
+    <p class="callout" data-callout="crest" data-in="5"><i></i><span>Crista nasal</span></p>
+    <p class="callout callout--down" data-callout="teeth" data-in="5"><i></i><span>Dentes serrilhados</span></p>
+    <p class="callout callout--down" data-callout="hand" data-in="6"><i></i><span>Três dedos</span></p>
+  </div>
 
   <header class="top">
     <a class="top__brand" href="#ato-1">Yutyrannus</a>
@@ -87,7 +95,7 @@
         <p class="kicker" data-reveal>Ato 4 · As penas</p>
         <p class="num" data-reveal><span>~20</span><small>cm</small></p>
         <h2 data-reveal>Filamentos, não penas de voo.</h2>
-        <p data-reveal>Os fósseis preservam filamentos longos, simples e sem barbas, com alguns centímetros de comprimento. Foi a primeira evidência direta de um tiranossauroide grande e emplumado. Para que serviam (isolamento térmico, exibição ou os dois) <b class="est">ainda é debatido</b>, e a cor é desconhecida.</p>
+        <p data-reveal>Os fósseis preservam filamentos longos e simples, sem barbas, com cerca de 15 a 20 cm nos trechos preservados. Foi a primeira evidência direta de um tiranossauroide grande e emplumado. Para que serviam (isolamento térmico, exibição ou os dois) <b class="est">ainda é debatido</b>, e a cor é desconhecida.</p>
       </div>
     </section>
 
@@ -117,12 +125,28 @@
         <p class="kicker" data-reveal>Ato 7 · O mundo dele</p>
         <p class="num" data-reveal><span>125</span><small>Ma</small></p>
         <h2 data-reveal>Florestas de coníferas e um clima frio.</h2>
-        <p data-reveal>Os fósseis vêm da Formação Yixian, em Liaoning, nordeste da China. O clima era temperado a frio para a época, o que combina com um animal coberto de filamentos. A temperatura média exata <b class="est">é incerta</b>.</p>
+        <p data-reveal>Os três esqueletos são atribuídos à Formação Yixian, em Liaoning, nordeste da China, com cerca de 125 milhões de anos. O clima era temperado a frio para a época, o que combina com um animal coberto de filamentos. A temperatura média exata <b class="est">é incerta</b>.</p>
       </div>
-      <footer class="end">
-        <p>Yutyrannus huali · descrito em 2012 · valores marcados como estimativa vêm de reconstruções, não de medidas diretas.</p>
-      </footer>
+      <!-- linha do tempo do Mesozoico (larguras proporcionais à duração de cada período) -->
+      <div class="timeline" role="img" aria-label="Linha do tempo do Mesozoico: Triássico, de 252 a 201 milhões de anos atrás; Jurássico, de 201 a 143; Cretáceo, de 143 a 66. O Yutyrannus viveu há cerca de 125 milhões de anos. O Tyrannosaurus rex, entre 68 e 66.">
+        <div class="tl__bar">
+          <span class="tl__seg" style="--w:50.5"><b>Triássico</b></span>
+          <span class="tl__seg" style="--w:58.3"><b>Jurássico</b></span>
+          <span class="tl__seg tl__seg--k" style="--w:77.1"><b>Cretáceo</b></span>
+          <i class="tl__mark tl__mark--yu" style="--p:68.3"><em>Yutyrannus<span> · ~125 Ma</span></em></i>
+          <i class="tl__mark tl__mark--rex" style="--p:99.5"><em>T. rex<span> · 68–66 Ma</span></em></i>
+        </div>
+        <div class="tl__ages"><span style="--p:0">252</span><span style="--p:27.2">201</span><span style="--p:58.5">143</span><span style="--p:100">66 Ma</span></div>
+      </div>
     </section>
+
+    <!-- fecho: fontes e crédito do modelo -->
+    <footer class="outro">
+      <p class="kicker">Fontes e créditos</p>
+      <p>Base científica: Xu, X. et al. (2012). <i>A gigantic feathered dinosaur from the Lower Cretaceous of China</i>. Nature 484: 92–95. <a href="https://doi.org/10.1038/nature10906">doi:10.1038/nature10906</a></p>
+      <p>Modelo 3D adaptado de <a href="https://sketchfab.com/3d-models/yutyrannus-70659842d57949e8bbe3a4db1bbd365d">“Yutyrannus”, de Tim</a> (Sketchfab, CC BY). A cor branca é escolha artística: a cor real do animal é desconhecida. Valores marcados como estimativa vêm de reconstruções, não de medidas diretas.</p>
+      <p><a class="outro__back" href="#ato-1">Voltar ao início ↑</a></p>
+    </footer>
   </main>
 
 </body>

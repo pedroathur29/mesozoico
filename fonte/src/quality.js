@@ -3,9 +3,10 @@
 const params = new URLSearchParams(location.search);
 
 export const TIERS = [
-  { name: 'baixa', dpr: 1,   particles: 250,  shadows: false },
-  { name: 'média', dpr: 1.5, particles: 600,  shadows: false },
-  { name: 'alta',  dpr: 2,   particles: 1000, shadows: true  },
+  // feathers: a camada de penas é transparente e é o que mais pesa; no nível baixo fica só a penugem pintada no corpo
+  { name: 'baixa', dpr: 1,   feathers: false, shadows: false },
+  { name: 'média', dpr: 1.5, feathers: true,  shadows: false },
+  { name: 'alta',  dpr: 2,   feathers: true,  shadows: true  },
 ];
 
 export function initialTier() {
@@ -24,6 +25,7 @@ export class QualityMonitor {
   constructor(tier, locked, onChange) {
     this.tier = tier; this.locked = locked; this.onChange = onChange;
     this.frames = 0; this.slow = 0; this.last = performance.now(); this.good = 0;
+    this.since = performance.now(); // carência: os primeiros segundos (compilação de shaders, entrada) não contam
     this.showFps = params.has('fps');
     if (this.showFps) { this.el = document.createElement('div'); this.el.className = 'fps'; document.body.append(this.el); }
   }
@@ -31,6 +33,7 @@ export class QualityMonitor {
   tick(now) {
     const dt = now - this.last; this.last = now;
     if (dt > 250) return; // aba voltou do segundo plano: ignora
+    if (now - this.since < 3500) return;
     this.frames++; if (dt > 34) this.slow++;
     if (this.frames < 45) return;
     const ratio = this.slow / this.frames;

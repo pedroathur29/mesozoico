@@ -108,23 +108,50 @@ function paintGlow(s) {
   root.style.setProperty('--glow-y', (narrow ? 28 : s.glowY) + '%');
 }
 
-/* ---------- textos: revelação e contadores ---------- */
+/* ---------- textos: revelação, contagem dos números e títulos por palavra ---------- */
+let activeAct = 1;
+function splitHeadings() {
+  $$('.act h2').forEach((h) => {
+    const words = h.textContent.trim().split(/\s+/);
+    h.removeAttribute('data-reveal');
+    h.setAttribute('aria-label', h.textContent.trim());
+    h.innerHTML = words.map((w, i) => `<span class="w" aria-hidden="true"><span style="--i:${i}">${w}</span></span>`).join(' ');
+  });
+}
+// "~20" -> conta de 0 a 20 mantendo o prefixo
+function countUp(el) {
+  const full = el.dataset.full || (el.dataset.full = el.textContent); // guarda o valor final: a contagem pode ser interrompida no meio
+  const m = full.match(/^(\D*)(\d+)$/);
+  if (!m || reduce) return;
+  const o = { v: 0 }, end = +m[2];
+  if (el._tw) el._tw.kill();
+  el._tw = gsap.to(o, { v: end, duration: 0.9 + Math.min(0.6, end / 200), ease: 'power2.out', onUpdate: () => { el.textContent = m[1] + Math.round(o.v); }, onComplete: () => { el.textContent = m[1] + end; } });
+}
 function setupReveals() {
+  splitHeadings();
   const dots = $$('[data-dot]'), navs = $$('[data-nav]'), ghosts = $$('[data-ghost]');
+  // fecho: o título da abertura volta atrás do dino e as anotações somem
+  const showGhost = (n) => ghosts.forEach((g) => g.classList.toggle('is-on', +g.dataset.ghost === n));
+  const outro = $('.outro');
+  if (outro) ScrollTrigger.create({
+    trigger: outro, start: 'top 55%',
+    onToggle: (self) => { activeAct = self.isActive ? 0 : 7; showGhost(self.isActive ? 1 : 7); },
+  });
   $$('.act').forEach((sec) => {
     const n = +sec.dataset.act;
     // o texto de cada ato aparece junto (com escalonamento via CSS) enquanto o ato está na tela
     ScrollTrigger.create({
       trigger: sec, start: 'top 70%', end: 'bottom 35%',
-      onToggle: (self) => sec.classList.toggle('is-in', self.isActive),
+      onToggle: (self) => { sec.classList.toggle('is-in', self.isActive); if (self.isActive) $$('.num > span', sec).forEach(countUp); },
     });
     ScrollTrigger.create({
       trigger: sec, start: 'top 55%', end: 'bottom 55%',
       onToggle: (self) => {
         if (!self.isActive) return;
+        activeAct = n;
         dots.forEach((d) => d.classList.toggle('is-on', +d.dataset.dot === n));
         navs.forEach((a) => a.classList.toggle('is-on', +a.dataset.nav === n));
-        ghosts.forEach((g) => g.classList.toggle('is-on', +g.dataset.ghost === n));
+        showGhost(n);
       },
     });
   });
@@ -134,6 +161,7 @@ function setupReveals() {
 // movimento do dino: a fase do passo avança com a rolagem, e ele para (suavemente) quando a página para
 const motion = { phase: 0, moving: 0, lastY: null, idle: reduce ? 0 : 1 };
 const QS = new URLSearchParams(location.search);
+const callouts = $$('.callout').map((el) => ({ el, name: el.dataset.callout, act: +el.dataset.in, pos: { x: 0, y: 0, visible: false }, on: false }));
 const STRIDE = 2.9; // metros que o dino avança num ciclo completo de passo (para o pé não patinar na entrada)
 
 // ponteiro (só mouse): a cabeça do dino acompanha de leve
@@ -171,6 +199,13 @@ function frame(now) {
   if (DEBUG) for (const k of ['walk', 'phase', 'roar', 'idle', 'enter']) if (QS.has(k)) m[k] = +QS.get(k);
   gl.apply(s, DEBUG && QS.has('t') ? +QS.get('t') * 1000 : now, m);
   gl.render();
+  // anotações de anatomia: seguem o ponto do corpo e só aparecem no ato delas
+  for (const c of callouts) {
+    const a = c.act === activeAct ? gl.anchor(c.name, c.pos) : null;
+    const on = !!(a && a.visible);
+    if (on) c.el.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
+    if (on !== c.on) { c.on = on; c.el.classList.toggle('is-on', on); }
+  }
   monitor.tick(now);
 }
 
