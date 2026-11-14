@@ -31,9 +31,9 @@ Parâmetros de teste na URL: `?q=0|1|2` força a qualidade, `?fps` mostra o dese
 index.html            conteúdo dos 7 atos
 src/main.js           loading, scroll suave, revelação de textos, loop de desenho
 src/acts.js           coreografia: câmera, giro e cores por ato  ← ajuste aqui o "movimento"
-src/scene.js          cena Three.js (luzes, sombra de contato, humano de escala)
+src/scene.js          cena Three.js (luzes, chão sugerido por luz e sombra, pessoa de escala, alvo do olhar)
 src/dino.js           carregador do .glb (e um placeholder, usado se o modelo faltar)
-src/anim.js           animação por código: respiração, cauda, caminhada ligada à rolagem e rugido
+src/anim.js           animação por código: respira, pisca, olha para a câmera, anda, ruge, fareja, sacode as penas, mexe as garras
 src/quality.js        qualidade adaptativa (3 níveis, mede fps)
 src/style.css         visual: fundo escuro, dino branco, destaque azul-gelo
 public/assets/models/ yutyrannus.glb
@@ -41,12 +41,23 @@ tools/clean_model.py  prepara o modelo no Blender (tira a sela, apara as penas, 
 tools/publicar.mjs    copia o build para a raiz
 ```
 
+## O que o dino faz
+- **Sempre:** respira, balança a cauda, pisca e vira a cabeça para a câmera (no computador, acompanha o mouse).
+- **Abertura:** entra andando pela esquerda quando o loading termina.
+- **Atos 2 e 7:** anda enquanto a página rola e para quando ela para. Ao girar, a cauda fica para trás.
+- **Ato 3:** abaixa a cabeça e fareja a pessoa de 1,75 m.
+- **Ato 4:** sacode o corpo de tempos em tempos.
+- **Ato 5:** abre a boca aos poucos e termina rugindo de frente.
+- **Ato 6:** estende os braços e abre e fecha as garras.
+
+Com `prefers-reduced-motion`, só ficam as poses ligadas à rolagem.
+
 ## Os 7 atos
 1 Abertura · 2 Corpo inteiro · 3 Escala · 4 Penas · 5 Cabeça · 6 Braços e garras · 7 Habitat.
 Valores incertos levam o selo **estimativa**, **hipótese** ou **incerta**. A cor branca do animal é escolha artística: a cor real é desconhecida.
 
 ## Pendências
 - Confirmar autor, link e licença do modelo 3D (ver `CREDITS.md`).
-- Animação do dino: primeira versão feita por código (`fonte/src/anim.js`); falta ajuste fino vendo em movimento.
+- Animação do dino: feita por código (`fonte/src/anim.js`) e conferida só em poses paradas; falta ajuste fino vendo em movimento.
 - Imagens de apoio e revisão final dos textos com fontes.
 - Teste em celulares reais.

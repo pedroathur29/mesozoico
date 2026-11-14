@@ -67,7 +67,7 @@ function measure() {
 const VEC = ['cam', 'look', 'glow', 'bg', 'ink', 'acc'];
 const THEME = ['bg', 'ink', 'acc']; // cores do tema trocam rápido (quase um corte), o resto flui
 const sharp = (r) => smooth(Math.min(1, Math.max(0, (r - 0.38) / 0.24)));
-const NUM = ['rot', 'pitch', 'roll', 'shift', 'fov', 'glowA', 'glowX', 'glowY', 'light', 'human', 'walk', 'roar'];
+const NUM = ['rot', 'pitch', 'roll', 'shift', 'fov', 'glowA', 'glowX', 'glowY', 'light', 'human', 'walk', 'roar', 'sniff', 'ruffle', 'grab', 'nk'];
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpArr = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
 const smooth = (t) => t * t * (3 - 2 * t);
@@ -134,6 +134,22 @@ function setupReveals() {
 // movimento do dino: a fase do passo avança com a rolagem, e ele para (suavemente) quando a página para
 const motion = { phase: 0, moving: 0, lastY: null, idle: reduce ? 0 : 1 };
 const QS = new URLSearchParams(location.search);
+const STRIDE = 2.9; // metros que o dino avança num ciclo completo de passo (para o pé não patinar na entrada)
+
+// ponteiro (só mouse): a cabeça do dino acompanha de leve
+const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'mouse') return;
+  pointer.tx = (e.clientX / innerWidth) * 2 - 1; pointer.ty = (e.clientY / innerHeight) * 2 - 1;
+}, { passive: true });
+
+// entrada: quando o loading termina, o dino chega andando pela esquerda
+const intro = { total: 12, dist: 0 };
+function playIntro() {
+  if (reduce || DEBUG || scrollY > 40) return;
+  intro.dist = intro.total;
+  gsap.to(intro, { dist: 0, duration: 2.8, ease: 'power2.out', delay: 0.1 });
+}
 function frame(now) {
   if (document.hidden) return;
   const y = lenis ? lenis.scroll : scrollY;
@@ -144,9 +160,15 @@ function frame(now) {
   const target = stateAt(y);
   const s = follow(target, reduce || DEBUG ? 1 : 0.14); // ?debug: sem atraso (testes em máquinas lentas)
   paintGlow(s);
-  const m = { walk: reduce ? 0 : s.walk * motion.moving, roar: s.roar, phase: motion.phase, idle: motion.idle };
-  // ?debug&walk=1&phase=1.5&roar=1&t=2 fixa a pose (para capturas de teste)
-  if (DEBUG) for (const k of ['walk', 'phase', 'roar', 'idle']) if (QS.has(k)) m[k] = +QS.get(k);
+  pointer.x += (pointer.tx - pointer.x) * 0.06; pointer.y += (pointer.ty - pointer.y) * 0.06;
+  const arriving = Math.min(1, intro.dist / 1.4); // as pernas assentam no último metro e meio
+  const m = {
+    walk: reduce ? 0 : Math.max(s.walk * motion.moving, arriving),
+    phase: motion.phase + ((intro.total - intro.dist) / STRIDE) * Math.PI * 2,
+    roar: s.roar, idle: motion.idle, enter: intro.dist, pointer, snap: reduce || DEBUG,
+  };
+  // ?debug&walk=1&phase=1.5&roar=1&enter=5&t=2 fixa a pose (para capturas de teste)
+  if (DEBUG) for (const k of ['walk', 'phase', 'roar', 'idle', 'enter']) if (QS.has(k)) m[k] = +QS.get(k);
   gl.apply(s, DEBUG && QS.has('t') ? +QS.get('t') * 1000 : now, m);
   gl.render();
   monitor.tick(now);
@@ -162,6 +184,7 @@ function start() {
   loader.el.classList.add('is-done');
   document.body.classList.remove('is-loading');
   if (lenis) lenis.start();
+  playIntro();
   const hash = location.hash && $(location.hash);
   if (hash) lenis ? lenis.scrollTo(hash, { immediate: true }) : hash.scrollIntoView();
 }

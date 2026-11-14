@@ -3,7 +3,34 @@ import { buildPlaceholderDino } from './dino.js';
 import { TIERS } from './quality.js';
 import { createRig } from './anim.js';
 
-// Cena única e fixa. A rolagem só muda o "estado" (câmera, giro, luz, humano, cenário).
+// Onde fica a pessoa de 1,75 m do ato 3: um pouco à frente do focinho, do lado da câmera.
+const HUMAN = { x: 5.0, z: 1.0, height: 1.75 };
+
+// textura de mancha radial (usada na sombra de contato e na poça de luz do chão)
+function radialTexture(stops) {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  stops.forEach(([p, col]) => gr.addColorStop(p, col));
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+// pictograma de pessoa em pé, desenhado em canvas (silhueta chapada)
+function humanTexture() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); g.fill(); };
+  g.beginPath(); g.arc(128, 44, 36, 0, Math.PI * 2); g.fill(); // cabeça
+  rr(72, 92, 112, 190, 34);    // tronco
+  rr(34, 100, 34, 176, 17);    // braço esquerdo
+  rr(188, 100, 34, 176, 17);   // braço direito
+  rr(76, 250, 48, 258, 22);    // perna esquerda
+  rr(132, 250, 48, 258, 22);   // perna direita
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+
+// Cena única e fixa. A rolagem só muda o "estado" (câmera, giro, luz, pessoa de escala) e o movimento do dino.
 export function createScene(canvas, tier) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setClearColor(0x000000, 0);
@@ -15,30 +42,28 @@ export function createScene(canvas, tier) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
 
-  // luzes neutras (luz colorida tingia a plumagem branca): chave levemente quente, contraluz levemente fria
-  const hemi = new THREE.HemisphereLight(0xffffff, 0xa39d90, 1.1);
+  // luzes neutras (luz colorida tingia a plumagem branca): chave levemente quente, contraluz fria e forte para recortar a silhueta
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x8f96a3, 1.0);
   const key = new THREE.DirectionalLight(0xfff3e4, 2.2);
   key.position.set(8, 12, 9);
   key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
   Object.assign(key.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 40 });
   key.shadow.bias = -0.0004;
-  const rim = new THREE.DirectionalLight(0xe4ecff, 2.4);
-  rim.position.set(-9, 6, -10);
+  const rim = new THREE.DirectionalLight(0xdbe8ff, 3.2);
+  rim.position.set(-9, 7, -10);
   scene.add(hemi, key, rim);
 
-  // sombra de contato: uma mancha suave sob o dino (substitui o chão). A opacidade segue a cor de fundo do ato.
-  const shadowTex = (() => {
-    const c = document.createElement('canvas'); c.width = c.height = 128;
-    const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    gr.addColorStop(0, 'rgba(0,0,0,0.85)'); gr.addColorStop(0.5, 'rgba(0,0,0,0.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-  })();
-  const contact = new THREE.Mesh(new THREE.PlaneGeometry(13, 4.2), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.4, depthWrite: false }));
+  // chão sugerido só por duas manchas: uma poça de luz fria (assenta o dino no fundo escuro) e a sombra de contato
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(22, 9), new THREE.MeshBasicMaterial({
+    map: radialTexture([[0, 'rgba(255,255,255,1)'], [0.45, 'rgba(255,255,255,0.35)'], [1, 'rgba(255,255,255,0)']]),
+    color: 0x9fd3ff, transparent: true, opacity: 0.1, depthWrite: false, blending: THREE.AdditiveBlending }));
+  pool.rotation.x = -Math.PI / 2; pool.position.y = 0.01;
+  const contact = new THREE.Mesh(new THREE.PlaneGeometry(13, 4.2), new THREE.MeshBasicMaterial({
+    map: radialTexture([[0, 'rgba(0,0,0,0.85)'], [0.5, 'rgba(0,0,0,0.35)'], [1, 'rgba(0,0,0,0)']]), transparent: true, opacity: 0.4, depthWrite: false }));
   contact.rotation.x = -Math.PI / 2; contact.position.y = 0.02;
-  scene.add(contact);
+  scene.add(pool, contact);
 
-  // dinossauro (placeholder até existir o .glb)
+  // dinossauro (placeholder até o .glb carregar)
   // o pivô fica no centro do corpo (y = 1,7 m): assim o dino gira, inclina e rola em torno do tronco, e os pés continuam no chão em rotação 0
   const PIVOT_Y = 1.7;
   const dinoPivot = new THREE.Group();
@@ -49,19 +74,16 @@ export function createScene(canvas, tier) {
   dinoPivot.add(dino);
   scene.add(dinoPivot);
 
-  // humano de 1,75 m para a escala (ato 3), um boneco simples
-  const human = new THREE.Group();
-  {
-    const m = new THREE.MeshBasicMaterial({ color: 0x9fd3ff }) /* silhueta chapada na cor de destaque, para ler bem no fundo escuro */;
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 1.1, 6, 12), m); body.position.y = 0.95;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 12), m); head.position.y = 1.64;
-    human.add(body, head);
-  }
-  human.position.set(0.9, 0, 1.15); // quase no mesmo plano do dino, para a comparação de tamanho ser justa
+  // pessoa de 1,75 m para a escala (ato 3): silhueta plana que sempre encara a câmera
+  const humanMat = new THREE.MeshBasicMaterial({ map: humanTexture(), color: 0x9fd3ff, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide });
+  const human = new THREE.Mesh(new THREE.PlaneGeometry(HUMAN.height / 2, HUMAN.height), humanMat);
+  human.geometry.translate(0, HUMAN.height / 2, 0); // origem nos pés
+  human.position.set(HUMAN.x, 0, HUMAN.z);
   human.visible = false;
   scene.add(human);
 
-  const state = { tier, w: 1, h: 1, shift: 0, narrow: false };
+  const state = { tier, w: 1, h: 1, narrow: false, lastRot: null, spin: 0 };
+  const _t = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _h = new THREE.Vector3();
 
   function applyTier(t) {
     const T = TIERS[t];
@@ -78,31 +100,58 @@ export function createScene(canvas, tier) {
     camera.updateProjectionMatrix();
   }
 
-  // aplica um estado interpolado vindo do scroll
+  // aplica um estado interpolado vindo do scroll; motion traz o que move o dino (ver src/anim.js e src/main.js)
   let rig = null; // animação procedural, criada quando o modelo real carrega
   function apply(s, time, motion) {
     // em tela estreita, afasta a câmera para o dino caber na largura
-    const k = state.narrow ? Math.pow(1.78 / camera.aspect, 0.62) : 1;
+    const k = state.narrow ? Math.pow(1.78 / camera.aspect, 0.62) * (s.nk || 1) : 1;
     camera.position.set(
       s.look[0] + (s.cam[0] - s.look[0]) * k,
       s.look[1] + (s.cam[1] - s.look[1]) * k,
       s.look[2] + (s.cam[2] - s.look[2]) * k);
     camera.lookAt(s.look[0], s.look[1], s.look[2]);
-    if (camera.fov !== s.fov) { camera.fov = s.fov; }
+    camera.fov = s.fov;
     // desloca o dino na tela: de lado no desktop, para cima no celular
     const w = state.w, h = state.h;
-    if (state.narrow) camera.setViewOffset(w, h, 0, s.shift * -h * 0.0 + h * 0.14, w, h);
+    if (state.narrow) camera.setViewOffset(w, h, 0, h * 0.14, w, h);
     else camera.setViewOffset(w, h, -s.shift * w * 0.5, 0, w, h);
     camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+
+    // entrada: o dino chega andando de fora da tela (motion.enter = metros que faltam)
+    const enter = (motion && motion.enter) || 0;
+    dinoPivot.position.x = -enter;
+    pool.position.x = contact.position.x = -enter;
     dinoPivot.rotation.set(s.pitch, s.rot, s.roll);
-    if (rig && motion) rig.update(time / 1000, motion);
-    // a sombra de contato escurece mais em fundo claro
+    dinoPivot.updateMatrixWorld(true);
+
+    if (rig && motion) {
+      // giro do corpo por quadro (para a cauda e o pescoço ficarem para trás)
+      const d = state.lastRot === null ? 0 : s.rot - state.lastRot;
+      state.lastRot = s.rot;
+      state.spin += (Math.min(0.06, Math.max(-0.06, d)) - state.spin) * 0.15;
+      // alvo do olhar: a câmera, deslocada pelo ponteiro; no ato 3 passa a ser a pessoa
+      const p = motion.pointer || { x: 0, y: 0 };
+      _r.setFromMatrixColumn(camera.matrixWorld, 0); _u.setFromMatrixColumn(camera.matrixWorld, 1);
+      _t.copy(camera.position).addScaledVector(_r, p.x * 5).addScaledVector(_u, -p.y * 3);
+      _h.set(HUMAN.x, HUMAN.height * 0.72, HUMAN.z);
+      _t.lerp(_h, s.sniff);
+      dino.worldToLocal(_t);
+      rig.update(time / 1000, { ...motion, sniff: s.sniff, ruffle: s.ruffle, grab: s.grab, spin: motion.snap ? 0 : state.spin, look: _t, lookK: 0.5 + 0.45 * s.sniff });
+    }
+
+    // chão: em fundo claro a sombra escurece; em fundo escuro quem aparece é a poça de luz
     const lum = (s.bg[0] + s.bg[1] + s.bg[2]) / 765;
-    contact.material.opacity = 0.16 + 0.34 * lum;
-    key.intensity = 0.4 + 2.0 * s.light; rim.intensity = 0.8 + 1.8 * s.light;
+    contact.material.opacity = 0.2 + 0.3 * lum;
+    pool.material.opacity = 0.11 * (1 - lum);
+    key.intensity = 0.4 + 2.0 * s.light; rim.intensity = 1.0 + 2.4 * s.light;
+
     human.visible = s.human > 0.01;
-    human.scale.setScalar(1);
-    human.position.y = (1 - s.human) * -2.2;
+    if (human.visible) {
+      humanMat.opacity = Math.min(1, s.human * 1.4);
+      human.position.y = (1 - s.human) * -0.25;
+      human.rotation.y = Math.atan2(camera.position.x - HUMAN.x, camera.position.z - HUMAN.z);
+    }
   }
 
   function setModel(obj) {
