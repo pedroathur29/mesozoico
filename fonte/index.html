@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Yutyrannus huali — o tirano emplumado</title>
+  <meta name="description" content="Um passeio em 3D pelo Yutyrannus huali, o grande tiranossauroide emplumado do Cretáceo Inferior da China.">
+  <meta name="theme-color" content="#0a141d">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <!-- Loading: some quando a cena 3D estiver pronta -->
+  <div id="loader" role="status" aria-live="polite">
+    <div class="loader__inner">
+      <p class="loader__name">Yutyrannus</p>
+      <p class="loader__count"><span id="loader-num">0</span><small>%</small></p>
+      <div class="loader__bar"><i id="loader-bar"></i></div>
+    </div>
+  </div>
+
+  <div class="glow" aria-hidden="true"></div>
+  <!-- palavras gigantes ATRÁS do dino (o canvas é transparente e fica por cima) -->
+  <div class="ghosts" aria-hidden="true">
+    <span data-ghost="2">9 m</span><span data-ghost="3">5×</span><span data-ghost="4">Penas</span><span data-ghost="5">Crânio</span><span data-ghost="6">3 dedos</span><span data-ghost="7">125 Ma</span>
+  </div>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="top__brand" href="#ato-1">Yutyrannus</a>
+    <nav class="top__nav" aria-label="Atos">
+      <a href="#ato-2" data-nav="2">Corpo</a>
+      <a href="#ato-4" data-nav="4">Penas</a>
+      <a href="#ato-5" data-nav="5">Cabeça</a>
+      <a href="#ato-7" data-nav="7">Habitat</a>
+    </nav>
+    <span class="top__era">125 Ma</span>
+  </header>
+
+  <!-- título da abertura: fica ATRÁS do dino (o canvas é transparente e fica por cima) -->
+  <div class="hero-title" data-ghost="1" aria-hidden="true">
+    <p class="kick">Cretáceo Inferior · Liaoning, China</p>
+    <h1><span>Yutyr</span><span class="acc">annus</span></h1>
+  </div>
+
+  <ol class="dots" aria-hidden="true">
+    <li data-dot="1"></li><li data-dot="2"></li><li data-dot="3"></li><li data-dot="4"></li><li data-dot="5"></li><li data-dot="6"></li><li data-dot="7"></li>
+  </ol>
+
+  <main id="story">
+    <!-- ATO 1 · Abertura -->
+    <section class="act" id="ato-1" data-act="1" style="--len:150vh" aria-label="Yutyrannus, o tirano emplumado">
+      <h1 class="sr-only">Yutyrannus</h1>
+      <div class="copy copy--left copy--hero">
+        <p class="lead" data-reveal>O tirano emplumado.</p>
+        <p class="hint" data-reveal>Role para começar <i></i></p>
+      </div>
+    </section>
+
+    <!-- ATO 2 · Corpo inteiro -->
+    <section class="act" id="ato-2" data-act="2" style="--len:200vh">
+      <div class="copy copy--left">
+        <p class="kicker" data-reveal>Ato 2 · O corpo</p>
+        <p class="num" data-reveal><span data-count="9">9</span><small>m</small></p>
+        <h2 data-reveal>Um predador de nove metros.</h2>
+        <p data-reveal>Os maiores exemplares conhecidos chegavam a cerca de 9 m de comprimento e uns 1,4 t. Esses números são <b class="est">estimativas</b> feitas a partir de três esqueletos quase completos.</p>
+        <p class="meta" data-reveal>Yutyrannus huali · "tirano emplumado" + "belo" (mandarim)</p>
+      </div>
+    </section>
+
+    <!-- ATO 3 · Escala -->
+    <section class="act" id="ato-3" data-act="3" style="--len:150vh">
+      <div class="copy copy--right">
+        <p class="kicker" data-reveal>Ato 3 · Escala</p>
+        <p class="num" data-reveal><span>5</span><small>×</small></p>
+        <h2 data-reveal>Cinco vezes o comprimento de uma pessoa.</h2>
+        <p data-reveal>Ao lado de um humano de 1,75 m, o animal inteiro seria mais de cinco vezes mais comprido. Mesmo assim, era bem menor que o <i>Tyrannosaurus rex</i>, de uns 12 m, que viveu mais de 55 milhões de anos depois <b class="est">estimativa</b>.</p>
+      </div>
+    </section>
+
+    <!-- ATO 4 · Penas -->
+    <section class="act" id="ato-4" data-act="4" style="--len:190vh">
+      <div class="copy copy--left">
+        <p class="kicker" data-reveal>Ato 4 · As penas</p>
+        <p class="num" data-reveal><span>~20</span><small>cm</small></p>
+        <h2 data-reveal>Filamentos, não penas de voo.</h2>
+        <p data-reveal>Os fósseis preservam filamentos longos, simples e sem barbas, com alguns centímetros de comprimento. Foi a primeira evidência direta de um tiranossauroide grande e emplumado. Para que serviam (isolamento térmico, exibição ou os dois) <b class="est">ainda é debatido</b>, e a cor é desconhecida.</p>
+      </div>
+    </section>
+
+    <!-- ATO 5 · Cabeça -->
+    <section class="act" id="ato-5" data-act="5" style="--len:180vh">
+      <div class="copy copy--right">
+        <p class="kicker" data-reveal>Ato 5 · A cabeça</p>
+        <p class="num" data-reveal><span>~90</span><small>cm</small></p>
+        <h2 data-reveal>Um crânio de quase um metro.</h2>
+        <p data-reveal>Era carnívoro, com dentes serrilhados e mandíbulas fortes. Quais presas ele caçava no ambiente da Formação Yixian é uma <b class="est">hipótese</b>, não um dado fóssil direto.</p>
+      </div>
+    </section>
+
+    <!-- ATO 6 · Braços e garras -->
+    <section class="act" id="ato-6" data-act="6" style="--len:150vh">
+      <div class="copy copy--left">
+        <p class="kicker" data-reveal>Ato 6 · Braços e garras</p>
+        <p class="num" data-reveal><span>3</span><small>dedos</small></p>
+        <h2 data-reveal>Braços curtos, mão de três dedos.</h2>
+        <p data-reveal>O <i>Yutyrannus</i> ainda tinha três dedos em cada mão. Os tiranossauros que vieram depois, como o T. rex, ficaram com apenas dois.</p>
+      </div>
+    </section>
+
+    <!-- ATO 7 · Habitat -->
+    <section class="act" id="ato-7" data-act="7" style="--len:200vh">
+      <div class="copy copy--right">
+        <p class="kicker" data-reveal>Ato 7 · O mundo dele</p>
+        <p class="num" data-reveal><span>125</span><small>Ma</small></p>
+        <h2 data-reveal>Florestas de coníferas e um clima frio.</h2>
+        <p data-reveal>Os fósseis vêm da Formação Yixian, em Liaoning, nordeste da China. O clima era temperado a frio para a época, o que combina com um animal coberto de filamentos. A temperatura média exata <b class="est">é incerta</b>.</p>
+      </div>
+      <footer class="end">
+        <p>Yutyrannus huali · descrito em 2012 · valores marcados como estimativa vêm de reconstruções, não de medidas diretas.</p>
+      </footer>
+    </section>
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

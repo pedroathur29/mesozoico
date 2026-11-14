@@ -1,0 +1,56 @@
+// Coreografia da câmera e das cores. Cada ato tem 2 ou 3 keyframes ("at" = posição dentro do ato, 0..1).
+// Unidades em metros. Modelo real (Sketchfab): 9 m de comprimento, ~3,2 m de altura,
+// nariz em +X, cauda em -X, pés em y = 0. Pontos de referência aproximados:
+//   cabeça ≈ (3.9, 2.7)   tronco ≈ (0, 1.9)   braços ≈ (2.0, 1.8)   quadril ≈ (-0.8, 2.0)   ponta da cauda ≈ (-4.5, 1.3)
+//
+//   cam: posição da câmera      look: ponto para onde ela olha
+//   rot: giro do dino em Y      pitch/roll: inclinação do dino (rad, usar pouco: ±0.3)
+//   shift: deslocamento do dino na tela (-1..1, fração da largura)
+//   bg / ink / acc: cor de fundo, do texto e de destaque do ato (paleta OSSO ou NOITE, ver abaixo)
+//   glow: cor do brilho de fundo, glowA/X/Y: intensidade e posição (%)
+//   light: intensidade das luzes   human: 0..1 silhueta humana (ato 3)
+const D = { rot: 0, pitch: 0, roll: 0, shift: 0.2, fov: 34, glow: [120, 170, 215], glowA: 0.16, glowX: 72, glowY: 50, light: 1, human: 0 };
+
+// Duas paletas que se alternam a cada ato:
+//   OSSO  = claro, tinta escura, laranja queimado (sem brilho)
+//   NOITE = escuro azul-petróleo, texto claro, destaque azul-gelo (com um brilho frio discreto atrás do dino)
+const OSSO = { bg: [233, 228, 214], ink: [16, 22, 27], acc: [194, 65, 12], glowA: 0 };
+const NOITE = { bg: [10, 20, 29], ink: [232, 238, 242], acc: [159, 211, 255] };
+
+// Modo de paleta: 'noite' (padrão: todos os atos escuros, só variando o tom), 'osso' (todos claros) ou 'mix' (alterna).
+// Para testar sem mexer no código: ?pal=osso ou ?pal=mix na URL.
+const PAL = new URLSearchParams(location.search).get('pal') || 'noite';
+const TONES = { 1: [233, 228, 214], 2: [226, 221, 205], 3: [236, 226, 204], 4: [221, 225, 223], 5: [234, 224, 206], 6: [225, 220, 205], 7: [230, 230, 217] };
+const NIGHTS = { 1: [10, 20, 29], 2: [8, 31, 40], 3: [17, 28, 46], 4: [12, 24, 34], 5: [20, 24, 38], 6: [10, 20, 29], 7: [11, 27, 30] };
+
+const K = (act, at, pal, p) => (
+  PAL === 'osso' ? { act, at, ...D, ...OSSO, bg: TONES[act], ...p, glowA: 0 }
+  : PAL === 'noite' ? { act, at, ...D, ...NOITE, bg: NIGHTS[act], ...p }
+  : { act, at, ...D, ...pal, ...p });
+
+export const KEYFRAMES = [
+  // 1 · Abertura (OSSO): dino grande cortando o título que fica atrás dele
+  K(1, 0.0,  OSSO,  { cam: [0, 2.2, 10.8],    look: [0, 1.7, 0],     shift: 0.06, fov: 34 }),
+  K(1, 1.0,  OSSO,  { cam: [3.0, 2.4, 8.6],   look: [1.2, 1.8, 0],   rot: 0.15, shift: 0.1, fov: 34 }),
+  // 2 · Corpo inteiro (NOITE): órbita completa, passando por cima
+  K(2, 0.05, NOITE, { cam: [0, 2.7, 13],      look: [0, 1.7, 0],     rot: 0,     shift: 0.22, fov: 36, glowY: 55 }),
+  K(2, 0.5,  NOITE, { cam: [0, 8, 11.5],      look: [0, 1.4, 0],     rot: 3.14,  shift: 0.22, fov: 36, glowY: 52 }),
+  K(2, 0.95, NOITE, { cam: [0, 2.7, 13],      look: [0, 1.7, 0],     rot: 6.283, shift: 0.22, fov: 36, glowY: 55 }),
+  // 3 · Escala (OSSO): perfil limpo com o humano; depois vista alta e inclinada
+  K(3, 0.05, OSSO,  { cam: [0, 1.9, 21],      look: [0, 1.6, 0],     rot: 0,     shift: -0.3,  fov: 36, human: 1 }),
+  K(3, 0.95, OSSO,  { cam: [6.5, 10, 15],     look: [0.5, 1.4, 0],   rot: 0,     roll: -0.12, shift: -0.38, fov: 34, human: 1 }),
+  // 4 · Penas (NOITE): de baixo para cima, depois por cima do dorso
+  K(4, 0.05, NOITE, { cam: [5.2, 0.7, 5.4],   look: [0.2, 2.3, 0],   rot: 0,     pitch: 0.1,  shift: 0.34, fov: 30, glowY: 45 }),
+  K(4, 0.5,  NOITE, { cam: [3.0, 3.6, 4.6],   look: [-0.4, 2.4, 0],  rot: -0.4,  shift: 0.34, fov: 28, glowY: 45 }),
+  K(4, 0.95, NOITE, { cam: [0.8, 6.2, 3.6],   look: [-0.6, 2.2, 0],  rot: -0.8,  shift: 0.3, fov: 28, glowY: 45 }),
+  // 5 · Cabeça (OSSO): de frente, 3/4 e o outro lado da mandíbula
+  K(5, 0.05, OSSO,  { cam: [9.5, 2.8, 1.6],   look: [3.9, 2.6, 0],   rot: 0,     shift: -0.2, fov: 28 }),
+  K(5, 0.5,  OSSO,  { cam: [7.6, 3.2, 4.2],   look: [3.9, 2.6, 0],   rot: 0,     roll: 0.1, shift: -0.2, fov: 28 }),
+  K(5, 0.95, OSSO,  { cam: [9.4, 1.7, -1.5],  look: [3.9, 2.5, 0],   rot: 0,     shift: -0.34, fov: 28 }),
+  // 6 · Braços e garras (NOITE): close lateral que varre da cabeça à cauda
+  K(6, 0.05, NOITE, { cam: [4.6, 1.9, 5.6],   look: [1.0, 1.8, 0.3], rot: 0,     shift: 0.34, fov: 30, glowY: 55 }),
+  K(6, 0.95, NOITE, { cam: [-0.4, 2.0, 7.0],  look: [-1.4, 1.7, 0],  rot: 0,     shift: 0.34, fov: 32, glowY: 55 }),
+  // 7 · Habitat (OSSO): a câmera sobe e recua, o dino diminui no espaço vazio
+  K(7, 0.05, OSSO,  { cam: [-3, 5, 22],       look: [0, 1.5, 0],     rot: 0.5,   shift: -0.2, fov: 36, light: 0.9 }),
+  K(7, 1.0,  OSSO,  { cam: [-6, 9, 32],       look: [0, 1.5, 0],     rot: 0.8,   shift: -0.2, fov: 38, light: 0.9 }),
+];
