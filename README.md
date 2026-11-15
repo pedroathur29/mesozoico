@@ -33,22 +33,26 @@ src/main.js           loading, scroll suave, revelação de textos, loop de dese
 src/acts.js           coreografia: câmera, giro e cores por ato  ← ajuste aqui o "movimento"
 src/scene.js          cena Three.js (luzes, terreno, coníferas, sombras de contato, pessoa de escala, balanço dos filamentos)
 src/dino.js           carregador do .glb (e um placeholder, usado se o modelo faltar)
-src/anim.js           animação por código: pernas por cinemática inversa, passada sem deslizar, atrasos em cadeia, ações de parado
+src/anim.js           animação por código: pernas por cinemática inversa, passada sem deslizar, respiração, olhos, farejar, ações de parado
 src/quality.js        qualidade adaptativa (3 níveis, mede fps; o nível baixo esconde a camada de penas)
 src/style.css         visual: fundo escuro, dino branco, destaque azul-gelo
 public/assets/models/ yutyrannus.glb
-tools/clean_model.py  prepara o modelo no Blender (tira a sela, apara as penas, clareia, pinta o padrão de plumagem, reduz texturas)
+tools/clean_model.py  prepara o modelo no Blender (volume, filamentos simples, padrão de listras, penacho, chaves de forma da respiração)
 tools/publicar.mjs    copia o build para a raiz
 tools/check/          testes de passada, enquadramento e rolagem
 ```
 
+## O que o rig permite (conferido no modelo)
+O esqueleto tem 95 ossos e nenhuma animação pronta. Dá para animar: quadril, tronco (3 ossos), pescoço (3), cabeça, mandíbula, língua (4), pálpebras, globos oculares, clavículas (ombros), braço, antebraço, pulso e três dedos com três falanges, coxa, canela, metatarso, pé e três dedos, e cauda (6 ossos).
+O esqueleto **não tem** costelas, barriga nem narinas. Em vez de fingir isso com ossos que não existem, `tools/clean_model.py` acrescenta três chaves de forma ao modelo: `chest` (tórax), `belly` (abdômen) e `nostril` (narinas).
+
 ## O que o dino faz
-- **Sempre:** respira, passa o peso de uma perna para a outra com os pés plantados, balança a cauda, pisca e vira a cabeça para a câmera (no computador, acompanha o mouse). Os filamentos cedem ao movimento do corpo e a uma brisa leve.
-- **De tempos em tempos (parado):** olha para o lado, troca um pé de lugar, fareja o ar, abana a cauda, abaixa a cabeça ou boceja. A ordem é embaralhada e nunca repete a anterior.
-- **Abertura:** entra andando pela esquerda quando o loading termina e freia até parar.
-- **Atos 2 e 7:** anda enquanto a página rola. Quando a rolagem para, ele freia, termina o passo e assenta os pés.
+- **Sempre:** respira (o tórax abre e o abdômen acompanha logo depois, com uma pausa entre os ciclos; o ritmo acelera depois de andar ou rugir), passa o peso de uma perna para a outra com os pés plantados, pisca, move os olhos em pequenos saltos e vira a cabeça para a câmera (no computador, acompanha o mouse). Cauda, pescoço e filamentos seguem o corpo com atraso.
+- **De tempos em tempos (parado):** uma ação de cada vez, sorteada de um "saco" que é embaralhado a cada rodada: observar o entorno (os olhos vão primeiro, a cabeça segue), olhar de relance, farejar o chão (baixa a cabeça até perto do solo, aspira em rajadas curtas com as narinas abrindo e ergue de novo), farejar o ar, trocar um pé de lugar, ajustar a postura, abanar a cauda e, raramente, bocejar. Entre as ações há intervalos de 2 a 9 s e, às vezes, uma pausa longa.
+- **Abertura:** ele já aparece inteiro no quadro, um pouco atrás da marca. Dá alguns passos até o lugar e freia, enquanto a câmera se aproxima. Nada dele sai da tela.
+- **Atos 2 e 7:** anda enquanto a página rola (são os atos com intenção de deslocamento). Quando a rolagem para, ele freia, termina o passo e assenta os pés. Nos outros atos ele fica em repouso.
 - **Ato 3:** abaixa a cabeça e fareja a pessoa de 1,75 m. Uma régua no chão marca os 9 m.
-- **Ato 4:** sacode o corpo devagar, de tempos em tempos.
+- **Ato 4:** sacode o corpo devagar, de tempos em tempos. A câmera termina no penacho da cauda.
 - **Ato 5:** abre a boca aos poucos e termina rugindo de frente.
 - **Ato 6:** estende os braços e abre e fecha as garras.
 
@@ -56,17 +60,31 @@ Tudo isso é animação ilustrativa (o site diz isso no fecho), não um dado sob
 Com `prefers-reduced-motion`, ficam só a câmera e as poses ligadas à rolagem: sem caminhada, sem entrada e sem "vida própria".
 
 ## Como a animação funciona (`fonte/src/anim.js`)
-O modelo tem esqueleto (95 ossos) e nenhuma animação pronta, então tudo é calculado por código a cada quadro.
+Tudo é calculado por código a cada quadro, em cima da pose de repouso.
 - **Pernas por cinemática inversa:** cada pé tem um alvo e a perna (coxa, canela, metatarso) é resolvida para alcançá-lo, com uma correção para o erro ficar em milímetros.
 - **Passada:** o corpo avança `travel` metros e cada pé plantado fica preso a um ponto do chão. O pé de trás levanta quando chega ao limite, vai à frente e pousa. A velocidade pedida é suavizada (acelera e freia aos poucos) e o corpo nunca passa do alcance da perna de apoio.
 - **O chão anda, o dino fica no quadro:** a cena desloca a textura do terreno e as coníferas pelo mesmo `travel`. Por isso os pés não deslizam.
-- **Corpo:** o quadril sobe no meio do passo, pende para a perna de apoio e gira com a passada; o tronco gira ao contrário. Molas suavizam tudo.
+- **Corpo:** o quadril sobe no meio do passo, pende para a perna de apoio e gira com a passada; o tronco gira ao contrário; os ombros e os braços fazem um contrapeso pequeno (o braço recua quando a perna do mesmo lado avança). Molas suavizam tudo.
 - **Atraso:** cauda, pescoço, cabeça e braços seguem o quadril com atraso crescente (filtros em cadeia), em vez de ondas fixas.
+- **Respiração e narinas:** chaves de forma do modelo, não escala de ossos.
+- **Agenda das ações de parado:** gerada por sorteio fixo (a mesma para o mesmo relógio, o que permite testar), mas sem ciclo: durações e intervalos variam.
 - **Giro dos keyframes (`rot`):** gira o dino junto com o chão, o que equivale à câmera orbitar em volta dele.
+
+## O modelo (`fonte/tools/clean_model.py`)
+O arquivo original é preparado no Blender, por código. O script:
+- tira a sela e apara a plumagem;
+- dá volume às coxas, ao quadril e à base da cauda, recolhe a barriga e afina a cintura (robusto, mas esguio);
+- varia o comprimento e a direção dos tufos e cria um penacho na ponta da cauda e uma crina na nuca;
+- troca a textura da plumagem por um desenho próprio de **filamentos simples** (fios sem ramificação). A textura original mostrava penas com raque e barbas, o que contradizia o texto do site;
+- pinta um padrão próprio: listras escuras, anéis na cauda, penacho creme, máscara escura no focinho, crista ferrugem, pernas e mãos escuras. No corpo o padrão vai para a textura; na plumagem vai para um "mapa em volume" que o site consulta pela posição de cada fio, e por isso as listras ficam nítidas;
+- acrescenta as chaves de forma da respiração e das narinas e dá material próprio aos olhos.
+
+A imagem de *Jurassic World Evolution 3* enviada pelo autor serviu só de guia de acabamento (robustez, listras, penacho). Nenhum modelo, textura ou recurso do jogo foi usado: o padrão e a textura de filamentos são gerados aqui. A cor real do animal é desconhecida, e a referência não é prova de aparência.
 
 ## Cena (`fonte/src/scene.js`)
 - **Terreno:** disco de solo com textura gerada por código, que se esfuma nas bordas.
-- **Sombras de contato:** uma sob o tronco e uma sob cada pé, que some quando o pé levanta.
+- **Sombras de contato:** uma sob o tronco e uma sob cada pé, que some quando o pé levanta. No nível alto de qualidade o chão também recebe a sombra projetada do corpo.
+- **Plumagem:** filamentos recortados (não translúcidos), que cedem ao movimento do corpo e a uma brisa leve. De longe os cartões ficam mais cheios, para a pelagem não virar chuvisco.
 - **Coníferas:** silhuetas ao fundo, quase da cor do fundo. Só aparecem as que estão atrás do dino, e a intensidade vem do keyframe `flora` (nada na abertura, tudo no ato 7).
 - **Layout:** em celulares, tablets em pé e janelas quase quadradas (proporção abaixo de 1,45) o texto vai para baixo e o dino para cima. O mesmo critério está no CSS e na cena.
 
@@ -87,7 +105,7 @@ node tools/check/rolagem.cjs        # rola a página inteira como um usuário e 
 
 ## Os 7 atos
 1 Abertura · 2 Corpo inteiro · 3 Escala · 4 Penas · 5 Cabeça · 6 Braços e garras · 7 Habitat.
-Valores incertos levam o selo **estimativa**, **hipótese** ou **incerta**. A cor branca do animal é escolha artística: a cor real é desconhecida.
+Valores incertos levam o selo **estimativa**, **hipótese** ou **incerta**. A cor branca e as listras são escolha artística: a cor real é desconhecida.
 
 ## Pendências
 - Confirmar autor, link e licença do modelo 3D (ver `CREDITS.md`).

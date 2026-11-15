@@ -41,8 +41,8 @@ const K = (act, at, pal, p) => {
 
 export const KEYFRAMES = [
   // 1 · Abertura (OSSO): dino grande cortando o título que fica atrás dele
-  K(1, 0.0,  OSSO,  { cam: [0, 2.2, 10.8],    look: [0, 1.7, 0],     shift: 0.06, fov: 34, nk: 1.45, flora: 0.0 }),
-  K(1, 1.0,  OSSO,  { cam: [1.6, 2.3, 10.6],  look: [0.3, 1.75, 0],  rot: 0.12, shift: 0.08, fov: 34, nk: 1.45, flora: 0.25 }),
+  K(1, 0.0,  OSSO,  { cam: [0, 2.2, 10.8],    look: [0, 1.7, 0],     shift: 0.06, fov: 34, nk: 1.55, flora: 0.0 }),
+  K(1, 1.0,  OSSO,  { cam: [1.6, 2.3, 10.6],  look: [0.3, 1.75, 0],  rot: 0.12, shift: 0.08, fov: 34, nk: 1.55, flora: 0.25 }),
   // 2 · Corpo inteiro (NOITE): órbita completa, passando por cima
   K(2, 0.05, NOITE, { cam: [0, 2.7, 15],      look: [0, 1.7, 0],     rot: 0,     shift: 0.36, fov: 36, glowY: 55, walk: 1, flora: 0.6 }),
   K(2, 0.5,  NOITE, { cam: [0, 8.5, 13.5],    look: [0, 1.4, 0],     rot: 3.14,  shift: 0.4,  fov: 36, glowY: 52, walk: 1, flora: 0.6 }),
@@ -50,17 +50,17 @@ export const KEYFRAMES = [
   // 3 · Escala (OSSO): perfil limpo com o humano; depois vista alta e inclinada
   K(3, 0.05, OSSO,  { cam: [0, 1.9, 21],      look: [0, 1.6, 0],     rot: 0,     shift: -0.46, fov: 36, human: 1, sniff: 1, flora: 0.55 }),
   K(3, 0.95, OSSO,  { cam: [6.5, 10, 15],     look: [0.5, 1.4, 0],   rot: 0,     roll: -0.12, shift: -0.46, fov: 34, human: 1, sniff: 1, flora: 0.55 }),
-  // 4 · Penas (NOITE): de baixo para cima, depois por cima do dorso
+  // 4 · Penas (NOITE): do flanco, de baixo para cima, sobe pelo dorso e termina no penacho da cauda
   K(4, 0.05, NOITE, { cam: [5.2, 0.7, 5.4],   look: [0.2, 2.3, 0],   rot: 0,     pitch: 0.1,  shift: 0.38, fov: 30, glowY: 45, ruffle: 1, flora: 0.3 }),
-  K(4, 0.5,  NOITE, { cam: [3.0, 3.6, 4.6],   look: [-0.4, 2.4, 0],  rot: -0.4,  shift: 0.34, fov: 28, glowY: 45, ruffle: 1, flora: 0.3 }),
-  K(4, 0.95, NOITE, { cam: [0.8, 6.2, 3.6],   look: [-0.6, 2.2, 0],  rot: -0.8,  shift: 0.3, fov: 28, glowY: 45, ruffle: 1, flora: 0.3 }),
+  K(4, 0.5,  NOITE, { cam: [1.6, 3.6, 5.6],   look: [-1.2, 2.3, 0],  rot: -0.3,  shift: 0.36, fov: 28, glowY: 45, ruffle: 1, flora: 0.3 }),
+  K(4, 0.95, NOITE, { cam: [-1.9, 3.0, 5.4],  look: [-3.5, 2.3, 0],  rot: -0.25, shift: 0.36, fov: 28, glowY: 45, ruffle: 1, flora: 0.3 }),
   // 5 · Cabeça (OSSO): de frente, 3/4 e o outro lado da mandíbula
   K(5, 0.05, OSSO,  { cam: [9.5, 2.8, 1.6],   look: [3.9, 2.6, 0],   rot: 0,     shift: -0.2, fov: 28, roar: 0.1, flora: 0.25 }),
   K(5, 0.5,  OSSO,  { cam: [7.6, 3.2, 4.2],   look: [3.9, 2.6, 0],   rot: 0,     roll: 0.1, shift: -0.2, fov: 28, roar: 0.5, flora: 0.25 }),
   K(5, 0.95, OSSO,  { cam: [9.4, 1.7, -1.5],  look: [3.9, 2.5, 0],   rot: 0,     shift: -0.34, fov: 28, roar: 1, flora: 0.25 }),
   // 6 · Braços e garras (NOITE): 3/4 de frente, com os braços no centro da cena e a cabeça por cima; depois fecha nas garras
-  K(6, 0.05, NOITE, { cam: [7.2, 1.5, 3.6],   look: [2.6, 1.9, 0.2], rot: 0,     shift: 0.42,  fov: 30, glowY: 55, grab: 1, flora: 0.3 }),
-  K(6, 0.95, NOITE, { cam: [6.3, 1.1, 1.7],   look: [2.5, 1.5, 0.4], rot: 0,     shift: 0.46, fov: 28, glowY: 55, grab: 1, flora: 0.3 }),
+  K(6, 0.05, NOITE, { cam: [8.2, 1.7, 4.6],   look: [2.7, 2.05, 0.2], rot: 0,    shift: 0.4,  fov: 30, glowY: 55, grab: 1, flora: 0.3, nk: 1.25 }),
+  K(6, 0.95, NOITE, { cam: [7.4, 1.3, 2.9],   look: [2.6, 2.0, 0.3], rot: 0,     shift: 0.42, fov: 28, glowY: 55, grab: 1, flora: 0.3, nk: 1.25 }),
   // 7 · Habitat (OSSO): a câmera sobe e recua, o dino diminui no espaço vazio
   K(7, 0.05, OSSO,  { cam: [-3, 5, 22],       look: [0, 1.5, 0],     rot: 0.5,   shift: -0.2, fov: 36, light: 0.9, walk: 1, flora: 1.0 }),
   K(7, 1.0,  OSSO,  { cam: [-6, 9, 32],       look: [0, 1.5, 0],     rot: 0.8,   shift: -0.2, fov: 38, light: 0.9, walk: 1, flora: 1.0 }),

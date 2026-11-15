@@ -170,11 +170,13 @@ addEventListener('pointermove', (e) => {
   pointer.tx = (e.clientX / innerWidth) * 2 - 1; pointer.ty = (e.clientY / innerHeight) * 2 - 1;
 }, { passive: true });
 
-// entrada: quando o loading termina, o dino chega andando pela esquerda e freia até parar no lugar
-const intro = { total: 8.5, from: null };   // "from" = quanto ele já tinha andado quando a entrada começou
+// entrada: quando o loading termina, o dino já está inteiro no quadro, um pouco atrás da marca. Ele dá alguns passos
+// até o lugar e freia, enquanto a câmera se aproxima (ver "enter" em src/scene.js). Nada dele sai da tela.
+const intro = { total: 3.2, from: null };   // "from" = quanto ele já tinha andado quando a entrada começou
 function playIntro() {
   const rig = gl.rig();
   if (reduce || DEBUG || scrollY > 40 || !rig) return;
+  intro.total = gl.stacked ? 2.2 : 3.2;
   intro.from = rig.travel;
 }
 
@@ -182,7 +184,7 @@ function playIntro() {
 // passada (src/anim.js) acelera, freia e termina o passo sozinho, então parar de rolar não congela a pose.
 function walkCommand(s, remaining) {
   if (reduce) return 0;
-  if (remaining > 0) return Math.min(2.1, Math.sqrt(2 * 1.5 * remaining) + 0.3);      // entrada: freia para parar no ponto
+  if (remaining > 0) return Math.min(1.6, Math.sqrt(2 * 1.2 * remaining) + 0.25);     // entrada: passo calmo, freia para parar no ponto
   if (loop.scrollV < 45) return 0;
   return s.walk * Math.min(2.4, 0.85 + loop.scrollV / 900);
 }

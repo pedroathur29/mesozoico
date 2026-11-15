@@ -5,9 +5,9 @@
 
 - **Origem provável:** ["Yutyrannus" por Tim (@TimFallas) no Sketchfab](https://sketchfab.com/3d-models/yutyrannus-70659842d57949e8bbe3a4db1bbd365d), modelo do jogo ARK: Survival Evolved, listado como CC BY (Atribuição). O arquivo enviado tem a mesma contagem de triângulos (~41 mil) e a sela do ARK.
 - **PENDENTE:** confirmar o link exato, o autor e a licença na página do modelo e colar aqui. Se a licença for CC BY, o crédito (autor + link + licença) deve aparecer no site ou aqui. Como o modelo vem de um jogo, confirmar também que o uploader tem direito de distribuí-lo.
-- **Alterações feitas por nós (obrigatório informar em CC BY):** remoção da sela e de uma esfera solta; penas aparadas em 50% (cada fio puxado em direção ao corpo); texturas de cor clareadas para a plumagem ficar branca (olho e boca preservados); padrão de plumagem pintado em cores de vértice (dorso mais escuro, faixas, focinho e faixa atrás do olho), com variação de tom por pena; atributos extras por pena (`_TIP`, `_SEED`) para o balanço dos filamentos; texturas reduzidas de 2048 para 1024 px (WebP); giro de 90° para o nariz apontar em +X. Esqueleto mantido. O arquivo não tem animações: os movimentos do site são gerados por código (`fonte/src/anim.js`). Tudo isso é feito por `fonte/tools/clean_model.py`.
-- A cor branca e o padrão de faixas são escolhas artísticas, com desenho próprio: a cor real do animal é desconhecida.
-- Arquivo original: 26 MB. Arquivo usado no site: ~3 MB.
+- **Alterações feitas por nós (obrigatório informar em CC BY):** remoção da sela e de uma esfera solta; plumagem aparada em 50%; volume acrescentado às coxas, ao quadril e à base da cauda, barriga recolhida; tufos com comprimento e direção variados, com penacho na cauda e crina na nuca (cartões duplicados e alongados); textura da plumagem substituída por um desenho próprio de filamentos simples, gerado por código; textura de cor do corpo clareada (olho e boca preservados) e pintada com um padrão próprio de listras, máscara, crista e extremidades escuras; mapa em volume do mesmo padrão para a plumagem; chaves de forma novas (`chest`, `belly`, `nostril`); material próprio para os olhos; atributos por cartão (`_TIP`, `_SEED`, `_PAT`); texturas reduzidas para 1024 px em WebP. Tudo em `fonte/tools/clean_model.py`.
+- A cor branca e o padrão de listras são escolhas artísticas, com desenho próprio: a cor real do animal é desconhecida.
+- Arquivo original: 26 MB. Arquivo usado no site: ~3,8 MB.
 
 ## Fontes
 - Archivo (variável) via `@fontsource-variable/archivo`: SIL Open Font License 1.1
@@ -18,3 +18,4 @@
 
 ## Referências de estilo (só inspiração, nada copiado)
 Vídeos de sites de produto em 3D enviados pelo autor do projeto, e as práticas de desempenho do site DGL Telhadista (do próprio autor).
+Uma imagem do Yutyrannus de *Jurassic World Evolution 3*, enviada pelo autor, serviu de guia de acabamento (robustez, listras, penacho). Nenhum modelo, textura ou recurso do jogo foi usado.

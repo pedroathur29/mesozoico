@@ -28,6 +28,7 @@ const ANCHORS = {
   // extremos do corpo, usados só para conferir o enquadramento
   nose: [/^Head_/, [4.5, 2.6, 0]],
   tailTip: [/^Tail_01_06/, [-4.5, 2.35, 0]],
+  plumeTip: [/^Tail_01_06/, [-4.95, 2.5, 0]],
 };
 
 const rnd = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();   // sorteio fixo: a cena é sempre igual
@@ -183,6 +184,10 @@ export function createScene(canvas, tier) {
   const blobTex = radialTexture([[0, 'rgba(0,0,0,0.9)'], [0.45, 'rgba(0,0,0,0.4)'], [1, 'rgba(0,0,0,0)']]);
   const blob = (w, d) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, toneMapped: false })); m.rotation.x = -Math.PI / 2; m.renderOrder = -2; env.add(m); return m; };
   const bodyShadow = blob(11.5, 3.6); bodyShadow.position.set(-0.2, 0.012, 0);
+  // no nível alto, o chão também recebe a sombra de verdade do corpo (projetada pela luz principal)
+  const shadowCatcher = new THREE.Mesh(new THREE.PlaneGeometry(44, 30), new THREE.ShadowMaterial({ opacity: 0.42, transparent: true, depthWrite: false }));
+  shadowCatcher.rotation.x = -Math.PI / 2; shadowCatcher.position.y = 0.01; shadowCatcher.receiveShadow = true; shadowCatcher.renderOrder = -2; shadowCatcher.visible = false;
+  env.add(shadowCatcher);
   const footShadow = [blob(1.5, 1.0), blob(1.5, 1.0)];
 
   // coníferas ao fundo: silhuetas quase da cor do fundo, só atrás do dino (as que ficariam na frente não são desenhadas)
@@ -242,7 +247,11 @@ export function createScene(canvas, tier) {
   // brilho de contorno (contraluz na pelagem), mais forte nas bordas viradas para cima
   const rim = { value: new THREE.Color(0.8, 0.9, 1.0) };
   // filamentos: as pontas das penas cedem ao movimento do corpo e a uma brisa leve
-  const fur = { uSway: { value: new THREE.Vector3() }, uWind: { value: new THREE.Vector3() }, uTime: { value: 0 } };
+  const fur = { uSway: { value: new THREE.Vector3() }, uWind: { value: new THREE.Vector3() }, uTime: { value: 0 }, uPat: { value: null } };
+  // Padrão da plumagem: um "mapa em volume" (grade 32 x 256 x 80 em volta do corpo, guardada como imagem de fatias
+  // lado a lado). Cada pedacinho de filamento consulta a grade pela posição de repouso, então as listras atravessam
+  // os cartões com nitidez. Os números são os mesmos de tools/clean_model.py.
+  const PAT = { tx: 32, tz: 80, ny: 256, cols: 16 };
   function dress(mat, isFeather) {
     mat.onBeforeCompile = (sh) => {
       sh.uniforms.uRim = rim;
@@ -254,11 +263,30 @@ export function createScene(canvas, tier) {
       if (!isFeather) return;
       Object.assign(sh.uniforms, fur);
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute float aTip;\nattribute float aSeed;\nuniform vec3 uSway;\nuniform vec3 uWind;\nuniform float uTime;')
+        .replace('#include <common>', '#include <common>\nattribute float aTip;\nattribute float aSeed;\nattribute vec3 aPat;\nvarying vec3 vPat;\nuniform vec3 uSway;\nuniform vec3 uWind;\nuniform float uTime;')
         .replace('#include <skinning_vertex>', `#include <skinning_vertex>
+          vPat = aPat;
           float tipW = aTip * aTip;
           transformed += uSway * tipW;
           transformed += uWind * tipW * (sin(uTime * 1.1 + aSeed * 6.2831) + 0.5 * sin(uTime * 2.3 + aSeed * 17.0));`);
+      if (!fur.uPat.value) return;
+      const rows = PAT.ny / PAT.cols;
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>
+          uniform sampler2D uPat;
+          varying vec3 vPat;
+          vec3 patSlice(float i, vec2 inTile) { return texture2D(uPat, (vec2(mod(i, ${PAT.cols}.0), floor(i / ${PAT.cols}.0)) + inTile) / vec2(${PAT.cols}.0, ${rows}.0)).rgb; }
+          vec3 patAt(vec3 g) {
+            float fy = clamp(g.y, 0.0, 1.0) * ${PAT.ny - 1}.0, i0 = floor(fy);
+            vec2 inTile = vec2(clamp(g.x, ${(0.5 / PAT.tx).toFixed(5)}, ${(1 - 0.5 / PAT.tx).toFixed(5)}), clamp(g.z, ${(0.5 / PAT.tz).toFixed(5)}, ${(1 - 0.5 / PAT.tz).toFixed(5)}));
+            return mix(patSlice(i0, inTile), patSlice(min(i0 + 1.0, ${PAT.ny - 1}.0), inTile), fy - i0);
+          }`)
+        // de longe os fios ficam menores que um pixel e a pelagem viraria chuvisco: quanto mais longe, mais cheio o cartão
+        .replace('#include <color_fragment>', `#include <color_fragment>
+          diffuseColor.rgb *= patAt(vPat);
+          #ifdef USE_MAP
+            diffuseColor.a = min(1.0, diffuseColor.a * (1.0 + 0.38 * max(0.0, log2(length(fwidth(vMapUv)) * 1024.0))));
+          #endif`);
     };
     mat.customProgramCacheKey = () => (isFeather ? 'dino-fur' : 'dino-skin');
     mat.needsUpdate = true;
@@ -278,6 +306,7 @@ export function createScene(canvas, tier) {
     renderer.shadowMap.enabled = T.shadows; key.castShadow = T.shadows;
     renderer.shadowMap.needsUpdate = true;
     if (feather) feather.visible = T.feathers;
+    shadowCatcher.visible = T.shadows;
     resize();
   }
   function resize() {
@@ -292,7 +321,9 @@ export function createScene(canvas, tier) {
   function apply(s, time, dt, motion) {
     // quanto afastar a câmera para o dino caber: telas em pé (texto embaixo) e telas largas mas "quadradas" precisam de mais recuo
     const asp = camera.aspect;
-    const k = state.stacked ? Math.pow(1.78 / asp, 0.62) * (s.nk || 1) : (asp < 1.78 ? Math.pow(1.78 / asp, 1.3) : 1);
+    // entrada (motion.enter = metros que faltam até a marca): a câmera começa mais longe e se aproxima enquanto ele anda
+    const enter = (motion && motion.enter) || 0;
+    const k = (state.stacked ? Math.pow(1.78 / asp, 0.62) * (s.nk || 1) : (asp < 1.78 ? Math.pow(1.78 / asp, 1.3) : 1)) * (1 + 0.1 * enter);
     camera.position.set(
       s.look[0] + (s.cam[0] - s.look[0]) * k,
       s.look[1] + (s.cam[1] - s.look[1]) * k,
@@ -306,8 +337,6 @@ export function createScene(canvas, tier) {
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
 
-    // entrada: o dino chega andando de fora da tela (motion.enter = metros que faltam). O chão fica parado no quadro.
-    const enter = (motion && motion.enter) || 0;
     dinoPivot.position.x = -enter;
     dinoPivot.rotation.set(s.pitch, s.rot, s.roll);
     dinoPivot.updateMatrixWorld(true);
@@ -345,7 +374,7 @@ export function createScene(canvas, tier) {
     placeTrees(travel);
     // só entram as árvores mais fundas que o dino, vistas da câmera
     treeU.uCut.value = _t.copy(dinoPivot.position).sub(camera.position).dot(_r.setFromMatrixColumn(camera.matrixWorld, 2).negate()) + 5;
-    bodyShadow.material.opacity = 0.55 + 0.2 * lum;
+    bodyShadow.material.opacity = (0.55 + 0.2 * lum) * (shadowCatcher.visible ? 0.6 : 1);
     footShadow.forEach((m, i) => {
       const f = feet && feet[i];
       m.visible = !!f;
@@ -385,10 +414,19 @@ export function createScene(canvas, tier) {
         // "aTip" (0 na base da pena, 1 na ponta) e "aSeed" vêm do modelo; sem eles as penas simplesmente não balançam
         g.setAttribute('aTip', g.attributes._tip || new THREE.BufferAttribute(new Float32Array(n), 1));
         g.setAttribute('aSeed', g.attributes._seed || new THREE.BufferAttribute(new Float32Array(n), 1));
+        g.setAttribute('aPat', g.attributes._pat || new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+        // o mapa em volume do padrão viaja no .glb como textura de emissão; aqui ele vira só uma tabela de consulta
+        const pat = g.attributes._pat && o.material.emissiveMap;
+        if (pat) { pat.generateMipmaps = false; pat.minFilter = pat.magFilter = THREE.LinearFilter; pat.wrapS = pat.wrapT = THREE.ClampToEdgeWrapping; pat.needsUpdate = true; fur.uPat.value = pat; }
+        o.material.emissiveMap = null; o.material.emissive.setScalar(0);
+        // filamentos recortados (não translúcidos): gravam profundidade, então se ordenam direito e pesam menos
+        o.material.transparent = false; o.material.depthWrite = true; o.material.alphaTest = 0.32; o.material.alphaToCoverage = true;
+        o.material.side = THREE.DoubleSide;
       }
+      const isEye = /Eye/i.test(o.material.name);
       // penas foscas (pelagem não brilha); pele um pouco mais lisa. Sombras próprias só valem no nível alto.
-      o.material.roughness = isFeather ? 0.92 : 0.68;
-      o.material.envMapIntensity = isFeather ? 0.6 : 1;
+      o.material.roughness = isFeather ? 0.92 : isEye ? 0.08 : 0.68;   // olhos lisos e úmidos
+      o.material.envMapIntensity = isFeather ? 0.6 : isEye ? 2.2 : 1;
       o.castShadow = !isFeather; o.receiveShadow = true;
       dress(o.material, isFeather);
     });
@@ -418,7 +456,7 @@ export function createScene(canvas, tier) {
     extent() {
       const pts = [], o = {};
       for (const b of allBones) { project(_t.setFromMatrixPosition(b.matrixWorld), o); if (o.front) pts.push([o.x, o.y]); }
-      for (const n of ['nose', 'tailTip']) { const a = anchors[n]; if (a) { project(a.bone.localToWorld(_t.copy(a.local)), o); if (o.front) pts.push([o.x, o.y]); } }
+      for (const n of ['nose', 'tailTip', 'plumeTip']) { const a = anchors[n]; if (a) { project(a.bone.localToWorld(_t.copy(a.local)), o); if (o.front) pts.push([o.x, o.y]); } }
       return pts;
     },
     // onde está a base dos dedos de cada pé no chão (m, no referencial do terreno): para medir se o pé desliza
