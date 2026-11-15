@@ -48,7 +48,7 @@ O esqueleto **não tem** costelas, barriga nem narinas. Em vez de fingir isso co
 
 ## O que o dino faz
 - **Sempre:** respira (o tórax abre e o abdômen acompanha logo depois, com uma pausa entre os ciclos; o ritmo acelera depois de andar ou rugir), passa o peso de uma perna para a outra com os pés plantados, pisca, move os olhos em pequenos saltos e vira a cabeça para a câmera (no computador, acompanha o mouse). Cauda, pescoço e filamentos seguem o corpo com atraso.
-- **De tempos em tempos (parado):** uma ação de cada vez, sorteada de um "saco" que é embaralhado a cada rodada: observar o entorno (os olhos vão primeiro, a cabeça segue), olhar de relance, farejar o chão (baixa a cabeça até perto do solo, aspira em rajadas curtas com as narinas abrindo e ergue de novo), farejar o ar, trocar um pé de lugar, ajustar a postura, abanar a cauda e, raramente, bocejar. Entre as ações há intervalos de 2 a 9 s e, às vezes, uma pausa longa.
+- **De tempos em tempos (parado):** uma ação de cada vez, sorteada de um "saco" que é embaralhado a cada rodada: observar o entorno (os olhos vão primeiro, a cabeça segue), olhar de relance, farejar o chão (baixa a cabeça até perto do solo, aspira em rajadas curtas com as narinas abrindo e ergue de novo), farejar o ar, trocar um pé de lugar, ajustar a postura, abanar a cauda e, raramente, bocejar. Entre as ações há intervalos de 1,6 a 6 s e, às vezes, uma pausa longa. A boca fica fechada no repouso e na caminhada: só abre no rugido, no bocejo e, por um instante, ao farejar.
 - **Abertura:** ele já aparece inteiro no quadro, um pouco atrás da marca. Dá alguns passos até o lugar e freia, enquanto a câmera se aproxima. Nada dele sai da tela.
 - **Atos 2 e 7:** anda enquanto a página rola (são os atos com intenção de deslocamento). Quando a rolagem para, ele freia, termina o passo e assenta os pés. Nos outros atos ele fica em repouso.
 - **Ato 3:** abaixa a cabeça e fareja a pessoa de 1,75 m. Uma régua no chão marca os 9 m.
@@ -64,7 +64,9 @@ Tudo é calculado por código a cada quadro, em cima da pose de repouso.
 - **Pernas por cinemática inversa:** cada pé tem um alvo e a perna (coxa, canela, metatarso) é resolvida para alcançá-lo, com uma correção para o erro ficar em milímetros.
 - **Passada:** o corpo avança `travel` metros e cada pé plantado fica preso a um ponto do chão. O pé de trás levanta quando chega ao limite, vai à frente e pousa. A velocidade pedida é suavizada (acelera e freia aos poucos) e o corpo nunca passa do alcance da perna de apoio.
 - **O chão anda, o dino fica no quadro:** a cena desloca a textura do terreno e as coníferas pelo mesmo `travel`. Por isso os pés não deslizam.
-- **Corpo:** o quadril sobe no meio do passo, pende para a perna de apoio e gira com a passada; o tronco gira ao contrário; os ombros e os braços fazem um contrapeso pequeno (o braço recua quando a perna do mesmo lado avança). Molas suavizam tudo.
+- **Corpo:** o quadril sobe no meio do passo, pende para a perna de apoio e gira com a passada; logo depois de cada pouso o corpo cede um pouco e volta (recebe o peso). O tronco gira ao contrário e flexiona de leve; os ombros e os braços fazem um contrapeso pequeno (o braço recua quando a perna do mesmo lado avança). Molas suavizam tudo.
+- **Pés:** os dedos chegam um pouco erguidos, assentam e se espalham ao receber o peso; no impulso o calcanhar sobe e os dedos abrem de novo.
+- **Cabeça e cauda:** o pescoço cede a cada passo e a cabeça compensa, ficando quase nivelada; a cauda ondula para os lados e para cima e para baixo, com a onda correndo da base para a ponta.
 - **Atraso:** cauda, pescoço, cabeça e braços seguem o quadril com atraso crescente (filtros em cadeia), em vez de ondas fixas.
 - **Respiração e narinas:** chaves de forma do modelo, não escala de ossos.
 - **Agenda das ações de parado:** gerada por sorteio fixo (a mesma para o mesmo relógio, o que permite testar), mas sem ciclo: durações e intervalos variam.
@@ -73,7 +75,7 @@ Tudo é calculado por código a cada quadro, em cima da pose de repouso.
 ## O modelo (`fonte/tools/clean_model.py`)
 O arquivo original é preparado no Blender, por código. O script:
 - tira a sela e apara a plumagem;
-- dá volume às coxas, ao quadril e à base da cauda, recolhe a barriga e afina a cintura (robusto, mas esguio);
+- dá volume às coxas e à base da cauda, estreita o tronco, recolhe a barriga e deita os tufos do tronco (pernas fortes, corpo esguio);
 - varia o comprimento e a direção dos tufos e cria um penacho na ponta da cauda e uma crina na nuca;
 - troca a textura da plumagem por um desenho próprio de **filamentos simples** (fios sem ramificação). A textura original mostrava penas com raque e barbas, o que contradizia o texto do site;
 - pinta um padrão próprio: listras escuras, anéis na cauda, penacho creme, máscara escura no focinho, crista ferrugem, pernas e mãos escuras. No corpo o padrão vai para a textura; na plumagem vai para um "mapa em volume" que o site consulta pela posição de cada fio, e por isso as listras ficam nítidas;
@@ -95,7 +97,7 @@ node tools/check/passada.cjs        # anda, freia e volta a andar: quanto o pé 
 node tools/check/enquadramento.cjs  # em vários tamanhos de tela: o dino cabe no quadro? encosta no texto?
 node tools/check/rolagem.cjs        # rola a página inteira como um usuário e mede saltos e deslizamento
 ```
-Última medição: o pé plantado se move no máximo 4 mm durante um apoio (5 mm na rolagem real). Nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro em oito tamanhos de tela, de 360×640 a 1920×1080, e só num deles (1180×760, ato 2) um ponto do corpo fica a menos de 24 px do texto. Nos atos de detalhe (4, 5 e 6) o corte é intencional.
+Última medição: o pé plantado se move menos de 1 mm durante um apoio, andando ou rolando a página. Nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro em seis tamanhos de tela, de 360×640 a 1440×810, e só num deles (1280×720, ato 2) um ponto do corpo fica a menos de 24 px do texto. Nos atos de detalhe (4, 5 e 6) o corte é intencional.
 
 ## Elementos de documentário
 - **Anotações de anatomia** presas ao corpo do dino (filamentos, crista nasal, dentes, três dedos). Os pontos ficam em `ANCHORS`, em `fonte/src/scene.js`.

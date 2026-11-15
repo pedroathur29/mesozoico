@@ -196,8 +196,8 @@ if trim > 0:
 # ------------------------------------------------------------------ 3. volume
 if bulk > 0:
     # robusto, mas esguio: o volume vai para as coxas, o quadril e a base da cauda; tronco e barriga ganham pouco
-    AMT = {'hip': .10, 'sp1': .07, 'sp2': .075, 'spt': .07, 'nk1': .08, 'nk2': .065, 'nkt': .035, 't1': .10, 't2': .08, 't3': .055, 't4': .035, 't5': .015,
-           'thigh': .15, 'shin': .09, 'foot': .012, 'clav': .05, 'uarm': .03, 'farm': .012}
+    AMT = {'hip': .05, 'sp1': .0, 'sp2': .01, 'spt': .015, 'nk1': .03, 'nk2': .03, 'nkt': .02, 't1': .07, 't2': .065, 't3': .05, 't4': .035, 't5': .015,
+           'thigh': .14, 'shin': .09, 'foot': .012, 'clav': .02, 'uarm': .03, 'farm': .012}
     amt = sum(BR[k] * v for k, v in AMT.items()) * M * bulk
     disp = bnrm * amt[:, None]
     # peito e barriga mais fundos: os vértices virados para baixo descem mais
@@ -205,8 +205,11 @@ if bulk > 0:
     # barriga recolhida (silhueta atlética): o ventre entre o peito e o quadril sobe e a cintura afina um pouco
     waist = BR['sp1'] + 0.55 * BR['hip'] + 0.35 * BR['sp2']
     under = np.clip(-bnrm[:, 2], 0, 1) ** 1.3
-    disp[:, 2] += 0.13 * M * bulk * waist * under
-    disp -= bnrm * (0.035 * M * bulk * BR['sp1'] * (1 - under))[:, None]
+    disp[:, 2] += 0.22 * M * bulk * waist * under
+    disp[:, 2] += 0.07 * M * bulk * (BR['sp2'] + 0.6 * BR['spt']) * under          # o peito também sobe um pouco: fica proporcional à cintura
+    # tronco mais estreito: os lados fecham em direção ao meio (mais na cintura, menos no peito e no quadril)
+    narrow = 0.2 * BR['sp1'] + 0.15 * BR['sp2'] + 0.1 * BR['spt'] + 0.09 * BR['hip'] + 0.06 * BR['nk1'] + 0.06 * BR['clav']
+    disp[:, 0] -= bco[:, 0] * narrow * bulk
     disp[~main] = 0
     # suaviza o deslocamento pelos vizinhos (duas passadas), para não marcar a fronteira entre ossos
     e = np.concatenate([brep[btris[:, [0, 1]]], brep[btris[:, [1, 2]]], brep[btris[:, [2, 0]]]])
@@ -342,6 +345,8 @@ if plume > 0:
     target = np.where((nape * plume > pl)[:, None], tn, target)
     k = np.maximum(k, 0.55 * nape * plume)
     jit = 0.06 * rng.normal(size=(ncard, 3))
+    flat = 0.65 * np.clip(per_card(FR['sp1'] + FR['sp2'] + FR['spt'] + FR['hip'] + 0.6 * FR['nk1']), 0, 1)
+    s *= 1 - 0.2 * flat
     # cada vértice fora da base é reposicionado a partir do vértice da base que fica na mesma coluna do cartão
     order = np.argsort(card, kind='stable')
     start = np.searchsorted(card[order], np.arange(ncard + 1))
@@ -361,7 +366,9 @@ if plume > 0:
             o = fco[j] - fco[r]
             ln = np.linalg.norm(o)
             d = unit(unit(o) * (1 - k[c]) + target[c] * k[c] + jit[c])
-            new[j] = new[r] + d * ln * s[c]
+            vec = d * ln * s[c]
+            vec -= card_n[c] * max(0.0, vec.dot(card_n[c])) * flat[c]      # no tronco os tufos deitam: menos volume
+            new[j] = new[r] + vec
             length[c] = max(length[c], ln * s[c])
     fco = new
     set_world_co(feat, fco)
