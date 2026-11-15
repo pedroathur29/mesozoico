@@ -53,8 +53,8 @@ const phase = (t, rate, seed) => smooth(0.34, 0.6, 0.5 + 0.5 * wob(t * rate, see
 const bump = (u, c, w) => Math.exp(-(((u - c) / w) ** 2));
 const lag = (cur, target, tau, dt) => cur + (target - cur) * (1 - Math.exp(-dt / tau));
 // quanto a cauda responde ao quadril (de lado e para cima e para baixo). Ajustado por medição (tools/check/tracos.py)
-// para a ponta balançar uns 50 cm de lado e uns 30 cm na vertical ao andar; valores maiores viram chicote.
-const TAIL_Y = 1.0, TAIL_P = 0.9;
+// para a ponta balançar uns 40 cm de lado e uns 20 cm na vertical ao andar; valores maiores viram pêndulo ou chicote.
+const TAIL_Y = 0.62, TAIL_P = 0.62;
 // sacadas dos olhos: o alvo muda de repente (em ~0,1 s) e fica; em parte dos intervalos ele não muda
 function sacc(t, period, seed) {
   const k = Math.floor(t / period), u = t - k * period;
@@ -72,8 +72,16 @@ const JAW_CLOSE = 0.47, JAW_OPEN = 0.42;
 const LID_UP = 0.05, LID_LOW = 0.022;
 // Passada: fração do ciclo com o pé no chão, e onde fica o meio do apoio em relação à posição de repouso do pé (m).
 const DUTY = 0.62, STANCE_SHIFT = -0.2;
+// Andando, os pés pisam mais perto da linha do meio do corpo (trilha estreita, como nas pegadas de terópodes);
+// 1 = na largura do quadril, que dá um andar de pernas abertas. Ao parar, ele reabre a base com um passo de ajuste.
+const TRACK = 0.55;
 const REACH_BACK = -1.0;   // o mais para trás (m) que um pé plantado pode ficar: além disso a perna não alcança
 const strideLength = (v) => lerp(1.35, 2.25, clamp(v / 2.3, 0, 1));   // passada longa: a perna estica para trás no impulso e alcança à frente
+
+// Pose de repouso dos braços (rad, em cima da pose do modelo, que vem com o braço pendurado e os dedos retos):
+// upper: braço para trás (-) ou para a frente (+); lower: cotovelo dobra (+); wrist: punho solta (-);
+// tuck: cotovelo para junto do corpo; inward: antebraço para dentro; curl: quanto cada dedo curva; spread: abertura entre os dedos.
+const ARM = { upper: -0.25, lower: 0.8, wrist: -0.4, tuck: 0, inward: 0.18, curl: [0.4, 0.55, 0.62], spread: 0.1 };
 
 // ações espontâneas (só parado): nome -> duração base em s
 const ACTIONS = { look: 4.6, glance: 1.9, sniffGround: 6.6, sniffAir: 3.8, step: 1.0, settle: 3.4, swish: 2.6, yawn: 3.6 };
@@ -220,13 +228,13 @@ export function createRig(wrap) {
         const xr = f.gx - G.travel - f.L.home.x;
         const other = G.feet.find((o) => o !== f), gap = Math.abs((other.gx - G.travel - other.L.home.x) - xr);
         // andando: levanta o pé que ficou para trás (ou, na partida, com os pés lado a lado, dá logo o primeiro passo)
-        const want = moving ? (xr <= STANCE_SHIFT - A * (1 + 0.08 * vary(1)) || (xr <= -0.1 && gap < 0.25)) : (G.stillT > 0.7 && (xr < -0.34 || xr > 0.42));
+        const want = moving ? (xr <= STANCE_SHIFT - A * (1 + 0.08 * vary(1)) || (xr <= -0.1 && gap < 0.25)) : (G.stillT > 0.7 && (xr < -0.34 || xr > 0.42 || Math.abs(f.z - f.L.home.z) > 0.1));
         if (want && (!pick || xr < pick.xr)) pick = { f, xr };
       }
       if (pick) {
         const L = strideLength(G.v);
         G.n++;
-        if (moving) startSwing(pick.f, -0.07 * (1 + vary(2)) * A, clamp((1 - DUTY) * L / Math.max(G.v, 0.55), 0.3, 0.58) * (1 + 0.06 * vary(3)), (0.2 + 0.1 * clamp(G.v / 2.3, 0, 1)) * (1 + 0.16 * vary(4)), true, pick.f.L.home.z + 0.03 * vary(5));
+        if (moving) startSwing(pick.f, -0.07 * (1 + vary(2)) * A, clamp((1 - DUTY) * L / Math.max(G.v, 0.55), 0.3, 0.58) * (1 + 0.06 * vary(3)), (0.2 + 0.1 * clamp(G.v / 2.3, 0, 1)) * (1 + 0.16 * vary(4)), true, pick.f.L.home.z * TRACK + 0.03 * vary(5));
         else startSwing(pick.f, (hash(G.travel * 7.1 + pick.f.L.side) - 0.5) * 0.14, 0.62, 0.11, false);
       }
     }
@@ -252,7 +260,7 @@ export function createRig(wrap) {
         // antes de tocar. Sem isso ele chegaria "patinando" (era o que tirava o peso da pisada).
         const m = -(f.walkStep ? G.v : 0) * T;
         f.x = (2 * q3 - 3 * q2 + 1) * f.x0 + (q3 - 2 * q2 + q) * m + (-2 * q3 + 3 * q2) * land + (q3 - q2) * m;
-        f.z = lerp(f.z0, f.tz, e);
+        f.z = lerp(f.z0, f.tz, e) + f.L.side * 0.07 * Math.sin(Math.PI * q) * (f.walkStep ? 1 : 0.3);   // no ar o pé contorna a perna de apoio por fora
         // sobe descolando devagar e desce com alguma velocidade: pisa com decisão
         f.h = f.lift * ((0.5 - 0.5 * Math.cos(2 * Math.PI * q)) + 0.1 * Math.sin(Math.PI * q) * smooth(0.45, 1, q));
         f.y = home.y + f.h;
@@ -274,7 +282,7 @@ export function createRig(wrap) {
     cy: [0, 0, 0, 0, 0, 0, 0], cp: [0, 0, 0, 0, 0, 0, 0],                                    // cadeia de atraso da cauda
     fy: [0, 0, 0, 0, 0, 0], fr: [0, 0, 0, 0, 0, 0], fp: [0, 0, 0, 0, 0, 0],                  // cadeias de atraso do tronco à cabeça (giro, rolagem, inclinação)
     gazeY: 0, gazeP: 0, gate: 0, actK: null,
-    bph: 0, effort: 0, ti: 0, tj: 0,                                                                       // respiração: fase (ciclos) e esforço recente
+    bph: 0, effort: 0, ti: 0, tj: 0, rest: 0,                                                                       // respiração: fase (ciclos) e esforço recente
   };
   // z < 1: a mola passa um pouco do alvo e assenta (é o que dá a sensação de massa); z = 1: chega sem passar
   function spring(key, target, w, dt, z = 1) {
@@ -328,7 +336,27 @@ export function createRig(wrap) {
     return u < 0 || u > 1 ? null : { id: e.id, u, k: e.k, side: e.side };
   }
 
-  const sway = new THREE.Vector3();   // para onde os filamentos são empurrados (espaço do dino, m)
+  // Filamentos: cinco pontos do corpo (cabeça, peito, quadril, meio e ponta da cauda) têm cada um um "seguidor"
+  // preso por uma mola frouxa. Quando o corpo se mexe, o seguidor fica para trás, passa um pouco do ponto e assenta.
+  // A distância entre os dois é para onde os filamentos daquela região são empurrados (espaço do dino, m).
+  // Não há vento: parado o corpo, a plumagem para.
+  const FUR = [J.head, J.spineTop, J.hip, J.tail[2], J.tail[5]].map((j, i) => j && {
+    bone: j.bone, x: dinoPos(j.bone).x, p: new THREE.Vector3(), q: null, v: new THREE.Vector3(), out: new THREE.Vector3(), max: [0.035, 0.035, 0.035, 0.05, 0.07][i],
+  }).filter(Boolean);
+  function stepFur(dt, snap) {
+    for (const f of FUR) {
+      f.p.setFromMatrixPosition(f.bone.matrixWorld).applyMatrix4(_inv);
+      if (!f.q || snap) { f.q = f.p.clone(); f.v.set(0, 0, 0); }
+      const n = Math.max(1, Math.ceil(dt * 120)), h = dt / n, w = 9.5, z = 0.42;
+      for (let i = 0; i < n; i++) {
+        f.v.x += (w * w * (f.p.x - f.q.x) - 2 * z * w * f.v.x) * h; f.v.y += (w * w * (f.p.y - f.q.y) - 2 * z * w * f.v.y) * h; f.v.z += (w * w * (f.p.z - f.q.z) - 2 * z * w * f.v.z) * h;
+        f.q.addScaledVector(f.v, h);
+      }
+      f.out.subVectors(f.q, f.p).multiplyScalar(0.45);
+      f.out.x -= 0.012 * G.v;                       // andando, o ar empurra de leve para trás
+      f.out.clampLength(0, f.max);
+    }
+  }
 
   // t: relógio em s; dt: passo em s (0 = só reaplica a pose); o: ver cabeçalho
   function update(t, dt, o) {
@@ -363,6 +391,10 @@ export function createRig(wrap) {
     if (dt > 0) { S.ti += dt * 1.2 * smooth(-0.36, 0.06, wob(t * 0.47, 131)); S.tj += dt * 1.25 * smooth(-0.3, 0.1, wob(t * 0.39, 137)); }
     else if (o.snap) { S.ti = t * 0.72; S.tj = t * 0.75; }
     const ti = S.ti, tj = S.tj;
+    // as poses de repouso da cabeça e da cauda voltam devagar depois que ele para (e saem depressa quando arranca):
+    // sem isso a cauda dava um chicote a cada parada
+    if (dt > 0) S.rest = lag(S.rest, still, still > S.rest ? 1.3 : 0.4, dt); else if (o.snap) S.rest = still;
+    const rest = S.rest;
 
     // sacudida do corpo (ato das penas): uma passada lenta de ~1,3 s a cada 7,5 s
     const ru = ((t + 5.5) % 7.5) / 1.3;
@@ -494,7 +526,7 @@ export function createRig(wrap) {
     }
     if (dt > 0) { S.gazeY = lag(S.gazeY, ty, 0.45, dt); S.gazeP = lag(S.gazeP, tp, 0.45, dt); } else if (o.snap) { S.gazeY = ty; S.gazeP = tp; }
     // pequenas mudanças de direção da cabeça: escolhe um ponto, vai devagar e fica
-    const quiet = calm * (1 - 0.8 * sniff);
+    const quiet = Math.min(calm, rest) * (1 - 0.8 * sniff);
     const dYaw = 0.14 * drift(ti, 3.4, 5, 0.75) * quiet, dPitch = 0.055 * drift(ti, 4.6, 17, 0.85) * quiet, dTilt = 0.065 * drift(ti, 5.7, 29, 0.95) * quiet;
     const gy = S.gazeY + A.yaw, gp = S.gazeP + A.pitch;
 
@@ -525,37 +557,47 @@ export function createRig(wrap) {
     // ---------- cauda: contrapeso do quadril, com atraso que cresce até a ponta ----------
     // parado, a cauda assume uma curva suave para um lado, fica, e de tempos em tempos muda; por cima disso vem um
     // balanço lento que aparece e some (fases), em vez de um vai e vem sem fim
-    const curl = 0.08 * drift(tj, 6.9, 23, 2.6) * still;
+    const curl = 0.08 * drift(tj, 6.9, 23, 2.6) * rest;
     J.tail.forEach((j, i) => {
-      const follow = -TAIL_Y * (S.cy[i] - S.cy[i + 1]) - (i === 0 ? S.yaw * 0.3 : 0);
-      const slow = idle * (0.09 * wob(tj * 0.68 - i * 0.5, 31) + 0.04 * wob(tj * 0.31 - i * 0.3, 37)) * (1 - 0.6 * wk);
+      // a base da cauda desfaz boa parte do giro do quadril: ela fica na linha do corpo (contrapeso), em vez de varrer como um pêndulo
+      const follow = -TAIL_Y * (S.cy[i] - S.cy[i + 1]) - (i === 0 ? S.yaw * 0.42 : i === 1 ? S.yaw * 0.26 : 0);
+      const slow = idle * (0.09 * wob(tj * 0.68 - i * 0.5, 31) + 0.04 * wob(tj * 0.31 - i * 0.3, 37)) * (0.4 + 0.6 * rest);
       const sw = follow + slow + curl + ruf * 0.035 * Math.sin(t * 19 - 1.5 - i * 0.8) + A.swish * 0.13 * Math.sin(t * 4.2 - i * 0.85);
-      const up = TAIL_P * (S.cp[i] - S.cp[i + 1]) + idle * 0.02 * wob(tj * 0.55 - i * 0.4, 43) + 0.014 * drift(tj, 8.7, 47, 2.6) * still - 0.03 * r + 0.012 * sniff + 0.01 * A.swish + 0.012 * wk + 0.036 * A.down;   // ao baixar a cabeça a cauda não sobe junto: fica quase nivelada
+      const up = TAIL_P * (S.cp[i] - S.cp[i + 1]) + idle * 0.02 * wob(tj * 0.55 - i * 0.4, 43) + 0.014 * drift(tj, 8.7, 47, 2.6) * rest - 0.03 * r + 0.012 * sniff + 0.01 * A.swish + 0.012 * wk + 0.036 * A.down;   // ao baixar a cabeça a cauda não sobe junto: fica quase nivelada
       rot(j, i === 0 ? -S.roll * 0.6 : 0, sw, up);      // a base da cauda desfaz parte da inclinação do quadril
     });
 
-    // ---------- braços e garras: balançam com atraso; no "grab" estendem e as garras abrem e fecham ----------
+    // ---------- braços e mãos ----------
+    // Repouso: braço curto recolhido junto ao peito, cotovelo dobrado, punho solto e os três dedos levemente curvados
+    // e separados (palmas viradas uma para a outra, como num terópode; nada de mão espalmada nem gesto de gente).
+    // Andando: só um contrapeso pequeno. Parado: punho e dedos mudam de leve, cada mão no seu tempo.
+    // "grab" (ato das garras): o braço avança um pouco e os dedos abrem e fecham um depois do outro.
+    const AP = o.armPose ? { ...ARM, ...o.armPose } : ARM;
     J.arms.forEach((Arm, n) => {
-      const sgn = n ? -1 : 1;
-      // equilíbrio na caminhada: o braço recua um pouco quando a perna do mesmo lado avança (e o ombro acompanha)
+      const sgn = n ? -1 : 1, sd = Arm.side;
       const foot = G.feet.find((f) => f.L.side === Arm.side);
-      const bal = foot ? -0.1 * wk * clamp((foot.x - foot.L.home.x - STANCE_SHIFT) / 0.7, -1, 1) : 0;
-      rot(Arm.clav, 0, 0, bal * 0.45 + 0.012 * breath + 0.02 * r);
-      const swing = (S.armY - S.py) * 1.6 - sgn * (S.yaw - S.lagYaw) * 0.6 + idle * 0.05 * wob(ti * 0.95, sgn * 5) + bal;
-      const flex = grab * (0.5 + 0.5 * Math.sin(t * 1.9 + sgn * 0.9));
-      const twitch = still * 0.18 * Math.max(0, wob(ti * 0.8, 40 + sgn * 9)) ** 2;   // dedos mexem sozinhos de vez em quando
-      rot(Arm.upper, 0, 0, swing + 0.12 * r + 0.3 * grab);
-      rot(Arm.lower, 0, 0, swing * 0.6 - 0.15 * r + 0.22 * grab - 0.12 * flex);
-      rot(Arm.wrist, 0, 0, 0.15 * grab - 0.2 * flex - 0.1 * twitch);
+      const bal = foot ? -0.06 * wk * clamp((foot.x - foot.L.home.x - STANCE_SHIFT) / 0.7, -1, 1) : 0;   // recua quando a perna do mesmo lado avança
+      const swing = clamp((S.armY - S.py) * 1.1, -0.06, 0.06) - sgn * (S.yaw - S.lagYaw) * 0.35 + bal;
+      const ease = 1 - 0.55 * grab;                                                    // no ato das garras a pose recolhida abre
+      const wristV = still * 0.11 * drift(ti, 5.3, 201 + n * 7, 1.5), curlV = still * 0.13 * drift(ti, 4.1, 211 + n * 7, 1.3);
+      rot(Arm.clav, 0, 0, bal * 0.4 + 0.012 * breath + 0.02 * r);
+      rot(Arm.upper, sd * AP.tuck, 0, AP.upper * ease + swing + 0.1 * r + 0.3 * grab + 0.02 * still * drift(ti, 7.3, 221 + n, 2));
+      rot(Arm.lower, 0, sd * AP.inward, AP.lower * ease + swing * 0.5 - 0.12 * r + 0.1 * grab);
+      rot(Arm.wrist, 0, 0, AP.wrist * ease + wristV + 0.1 * grab);
       Arm.fingers.forEach((F, f) => {
-        rot(F[0], grab * (f - 1) * 0.18, 0, 0.3 * grab - 0.55 * flex - 0.1 * r - 0.3 * twitch);   // abre em leque
-        rot(F[1], 0, 0, -0.5 * flex - 0.12 * r - 0.35 * twitch);
-        rot(F[2], 0, 0, -0.45 * flex - 0.12 * r - 0.3 * twitch);
+        // abre e fecha: cada dedo no seu tempo (o primeiro puxa, os outros seguem); parado, um dedo ou outro mexe sozinho
+        const cyc = grab * (0.5 + 0.5 * Math.sin(t * 1.7 + sgn * 0.9 - f * 0.55));
+        const fid = still * 0.22 * Math.max(0, wob(ti * 0.7, 40 + sgn * 9 + f * 13)) ** 2;
+        const curl = AP.curl[f] * (1 - 0.75 * grab) + curlV * (0.7 + 0.3 * f) + 0.6 * cyc + fid + 0.1 * r;
+        rot(F[0], 0, 0, (1 - f) * (AP.spread + 0.07 * grab * (1 - cyc)) - curl * 0.55);
+        rot(F[1], 0, 0, -curl * 0.9);
+        rot(F[2], 0, 0, -curl * 0.8);
       });
     });
 
     // ---------- filamentos: empurrados para trás pela velocidade e para o lado oposto de cada movimento do quadril ----------
-    sway.set(-0.012 * G.v, (S.lagY - S.py) * 0.5, (S.lagZ - S.pz) * 0.6 + (S.yaw - S.lagYaw) * 0.25).clampLength(0, 0.05);
+    wrap.updateMatrixWorld(true);
+    stepFur(dt, dt === 0 && o.snap);
     if (rig.debug) rig.debug(J, rot, move, G, S);
   }
 
@@ -583,7 +625,7 @@ export function createRig(wrap) {
 
   const rig = {
     probe,
-    update, simulate, headPos, actionAt, sway, debug: null, timeline: (t) => { extendTo(t); return TL; },
+    update, simulate, headPos, actionAt, fur: FUR, debug: null, timeline: (t) => { extendTo(t); return TL; },
     get travel() { return G.travel; }, get speed() { return G.v; },
     // pés no espaço do dino: posição da base dos dedos e altura acima do chão (para sombras e testes)
     feet: () => G.feet.map((f) => ({ x: f.x, z: f.z, h: f.h, planted: f.planted, gx: f.gx, side: f.L.side })),

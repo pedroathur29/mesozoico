@@ -247,7 +247,8 @@ export function createScene(canvas, tier) {
   // brilho de contorno (contraluz na pelagem), mais forte nas bordas viradas para cima
   const rim = { value: new THREE.Color(0.8, 0.9, 1.0) };
   // filamentos: as pontas das penas cedem ao movimento do corpo e a uma brisa leve
-  const fur = { uSway: { value: new THREE.Vector3() }, uWind: { value: new THREE.Vector3() }, uTime: { value: 0 }, uPat: { value: null } };
+  const fur = { uSw: { value: [0, 1, 2, 3, 4].map(() => new THREE.Vector3()) }, uSx: { value: [0, 0.25, 0.5, 0.75, 1] }, uPat: { value: null } };
+  const furFit = { a: 0.5, b: 0 };   // onde cada ponto do corpo cai no eixo "comprimento" do atributo aPat (medido no modelo)
   // Padrão da plumagem: um "mapa em volume" (grade 32 x 256 x 80 em volta do corpo, guardada como imagem de fatias
   // lado a lado). Cada pedacinho de filamento consulta a grade pela posição de repouso, então as listras atravessam
   // os cartões com nitidez. Os números são os mesmos de tools/clean_model.py.
@@ -263,12 +264,14 @@ export function createScene(canvas, tier) {
       if (!isFeather) return;
       Object.assign(sh.uniforms, fur);
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute float aTip;\nattribute float aSeed;\nattribute vec3 aPat;\nvarying vec3 vPat;\nuniform vec3 uSway;\nuniform vec3 uWind;\nuniform float uTime;')
+        .replace('#include <common>', '#include <common>\nattribute float aTip;\nattribute float aSeed;\nattribute vec3 aPat;\nvarying vec3 vPat;\nuniform vec3 uSw[5];\nuniform float uSx[5];')
         .replace('#include <skinning_vertex>', `#include <skinning_vertex>
           vPat = aPat;
-          float tipW = aTip * aTip;
-          transformed += uSway * tipW;
-          transformed += uWind * tipW * (sin(uTime * 1.1 + aSeed * 6.2831) + 0.5 * sin(uTime * 2.3 + aSeed * 17.0));`);
+          // cada filamento cede para onde a sua região do corpo "ficou para trás" (cabeça, peito, quadril, cauda);
+          // a base não sai do lugar, a ponta cede mais, e cada tufo cede um pouco diferente do vizinho
+          vec3 sw = uSw[0];
+          for (int i = 0; i < 4; i++) sw = mix(sw, uSw[i + 1], smoothstep(uSx[i], uSx[i + 1], aPat.y));
+          transformed += sw * min(aTip * aTip, 1.6) * (0.7 + 0.6 * aSeed);`);
       if (!fur.uPat.value) return;
       const rows = PAT.ny / PAT.cols;
       sh.fragmentShader = sh.fragmentShader
@@ -355,9 +358,7 @@ export function createScene(canvas, tier) {
       // filamentos: o empurrão vem no espaço do dino e o shader trabalha no espaço da malha
       if (feather) {
         _m3.setFromMatrix4(_m4.copy(feather.matrixWorld).invert().multiply(dino.matrixWorld));
-        fur.uSway.value.copy(rig.sway).applyMatrix3(_m3);
-        fur.uWind.value.set(-0.004, 0.001, 0.005).multiplyScalar(motion.idle ?? 1).applyMatrix3(_m3);
-        fur.uTime.value = time / 1000;
+        rig.fur.forEach((f, i) => { fur.uSw.value[i].copy(f.out).applyMatrix3(_m3); fur.uSx.value[i] = furFit.a + furFit.b * f.x; });
       }
     }
 
@@ -415,6 +416,15 @@ export function createScene(canvas, tier) {
         g.setAttribute('aTip', g.attributes._tip || new THREE.BufferAttribute(new Float32Array(n), 1));
         g.setAttribute('aSeed', g.attributes._seed || new THREE.BufferAttribute(new Float32Array(n), 1));
         g.setAttribute('aPat', g.attributes._pat || new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+        // relação entre a posição ao longo do corpo (x, em metros) e a coordenada "comprimento" de aPat: reta ajustada numa amostra
+        if (g.attributes._pat) {
+          let sx = 0, sy = 0, sxx = 0, sxy = 0, m = 0;
+          for (let i = 0; i < n; i += 37) {
+            const x = obj.worldToLocal(o.localToWorld(_t.fromBufferAttribute(g.attributes.position, i))).x, y = g.attributes._pat.getY(i);
+            sx += x; sy += y; sxx += x * x; sxy += x * y; m++;
+          }
+          furFit.b = (m * sxy - sx * sy) / (m * sxx - sx * sx); furFit.a = (sy - furFit.b * sx) / m;
+        }
         // o mapa em volume do padrão viaja no .glb como textura de emissão; aqui ele vira só uma tabela de consulta
         const pat = g.attributes._pat && o.material.emissiveMap;
         if (pat) { pat.generateMipmaps = false; pat.minFilter = pat.magFilter = THREE.LinearFilter; pat.wrapS = pat.wrapT = THREE.ClampToEdgeWrapping; pat.needsUpdate = true; fur.uPat.value = pat; }

@@ -1,6 +1,6 @@
 """Prepara o modelo do Yutyrannus para o site (rodar com o Blender como módulo Python: pip install bpy pillow).
 
-Uso: python tools/clean_model.py -- entrada.glb saida.glb [tex=1024] [trim=0.5] [white=1] [bulk=1] [plume=1] [pattern=1]
+Uso: python tools/clean_model.py -- entrada.glb saida.glb [tex=1024] [trim=0.5] [white=1] [bulk=1] [plume=1] [flow=1] [pattern=1]
 
 O que faz, nesta ordem:
   1. remove a sela (Object_10) e uma esfera solta (Icosphere);
@@ -9,7 +9,8 @@ O que faz, nesta ordem:
   3. bulk: dá volume. Os vértices do corpo andam para fora, ao longo da normal, tanto quanto o osso que os
      comanda pede: mais nas coxas, no quadril e na base da cauda, pouco no tronco e na barriga (robusto, mas esguio).
      Cabeça, mãos, pés, dentes e garras não mudam. Os cartões de plumagem acompanham a pele;
-  4. plume: varia o comprimento e a direção dos cartões e cria os tufos longos: um penacho na ponta da cauda
+  4. plume e flow: varia o comprimento dos cartões, alinha a direção de cada um à região do corpo (para trás no
+     tronco, para baixo nos membros, para a ponta na cauda, em camadas como telhas) e cria os tufos longos: um penacho na ponta da cauda
      e uma crina na nuca (cartões duplicados, alongados e penteados para trás);
   5. troca a textura da plumagem por um desenho próprio de FILAMENTOS SIMPLES (fios sem ramificação), gerado
      aqui por código. A textura original mostrava penas com raque e barbas, o que contradiz o texto do site;
@@ -38,6 +39,7 @@ trim = float(opt.get('trim', 0.5))
 white = float(opt.get('white', 1))
 bulk = float(opt.get('bulk', 1))
 plume = float(opt.get('plume', 1))
+flow = float(opt.get('flow', 1))
 pattern = float(opt.get('pattern', 1))
 rng = np.random.default_rng(7)
 
@@ -347,29 +349,61 @@ if plume > 0:
     jit = 0.06 * rng.normal(size=(ncard, 3))
     flat = 0.65 * np.clip(per_card(FR['sp1'] + FR['sp2'] + FR['spt'] + FR['hip'] + 0.6 * FR['nk1']), 0, 1)
     s *= 1 - 0.2 * flat
-    # cada vértice fora da base é reposicionado a partir do vértice da base que fica na mesma coluna do cartão
+    # Direção por região ("flow"): os tufos se deitam para trás ao longo do corpo e caem um pouco nos flancos; nas
+    # pernas e nos braços descem pelo membro; na cauda seguem para a ponta. Cada cartão fica quase encostado na pele,
+    # com a ponta um pouco levantada, e cobre a base do seguinte como telhas: é o que dá as camadas. Sem isso cada
+    # tufo apontava para um lado e a plumagem lia como pelo arrepiado.
+    leg_c = np.clip(per_card(FR['thigh'] + FR['shin'] + FR['foot']), 0, 1)
+    arm_c = np.clip(per_card(FR['uarm'] + FR['farm'] + FR['hand'] + 0.5 * FR['clav']), 0, 1)
+    neck_c = np.clip(per_card(FR['nk1'] + FR['nk2'] + FR['nkt']), 0, 1)
+    tail_c = np.clip(per_card(sum(FR[f't{i}'] for i in range(1, 7))), 0, 1)
+    head_c = np.clip(per_card(FR['head'] + FR['jaw']), 0, 1)
+    wb = 1 - 0.65 * leg_c - 0.7 * arm_c                                   # quanto "para trás"
+    wd = 0.45 + 0.55 * leg_c + 0.55 * arm_c + 0.25 * neck_c - 0.33 * tail_c - 0.25 * head_c   # quanto "para baixo"
+    want = back[None, :] * wb[:, None] + np.array([0.0, 0.0, -1.0])[None, :] * wd[:, None]
+    tang = want - card_n * (want * card_n).sum(1, keepdims=True)
+    lift = np.radians(9 + 13 * rng.random(ncard))
+    flow_dir = unit(unit(tang) * np.cos(lift)[:, None] + card_n * np.sin(lift)[:, None])
+    kf = flow * 0.82 * (1 - pl) * (1 - np.clip(nape * plume, 0, 1)) * (np.linalg.norm(tang, axis=1) > 0.2)
+    # cada cartão é refeito como um retângulo plano: nasce no mesmo ponto, aponta na direção nova e fica de frente para fora
     order = np.argsort(card, kind='stable')
     start = np.searchsorted(card[order], np.arange(ncard + 1))
+    first_tri = np.zeros(ncard, int)
+    first_tri[card[ftris[:, 0]][::-1]] = np.arange(len(ftris))[::-1]
     new = fco.copy()
     length = np.zeros(ncard)
     for c in range(ncard):
         idx = order[start[c]:start[c + 1]]
         roots = idx[tpar[idx] < 0.25]
-        if len(roots) == 0:
+        tips = idx[tpar[idx] > 0.75]
+        if len(roots) < 2 or len(tips) == 0:
             continue
+        rc = fco[roots].mean(0)
         if c >= n_before:                                         # cópias: saem um pouco do lugar, senão ficariam coladas ao original
             tng = rng.normal(size=3)
             tng -= card_n[c] * tng.dot(card_n[c])
-            new[idx] += tng / max(np.linalg.norm(tng), 1e-6) * 0.07 * M * rng.random()
-        for j in idx[tpar[idx] >= 0.25]:
-            r = roots[np.abs(upar[roots] - upar[j]).argmin()]
-            o = fco[j] - fco[r]
-            ln = np.linalg.norm(o)
-            d = unit(unit(o) * (1 - k[c]) + target[c] * k[c] + jit[c])
-            vec = d * ln * s[c]
-            vec -= card_n[c] * max(0.0, vec.dot(card_n[c])) * flat[c]      # no tronco os tufos deitam: menos volume
-            new[j] = new[r] + vec
-            length[c] = max(length[c], ln * s[c])
+            rc = rc + tng / max(np.linalg.norm(tng), 1e-6) * 0.07 * M * rng.random()
+        o = fco[tips].mean(0) - fco[roots].mean(0)
+        ln = np.linalg.norm(o)
+        d = unit(unit(o) * (1 - k[c]) + target[c] * k[c] + jit[c])
+        vec = d * ln * s[c]
+        vec -= card_n[c] * max(0.0, vec.dot(card_n[c])) * flat[c]      # no tronco os tufos deitam: menos volume
+        L_ = np.linalg.norm(vec)
+        d = unit(unit(vec) * (1 - kf[c]) + flow_dir[c] * kf[c])
+        wdir = np.cross(d, card_n[c])
+        if np.linalg.norm(wdir) < 0.2:                            # tufo de pé (penacho): usa a largura que ele já tinha
+            wdir = fco[roots[upar[roots].argmax()]] - fco[roots[upar[roots].argmin()]]
+            wdir -= d * wdir.dot(d)
+        wdir = unit(wdir)
+        width = np.linalg.norm(fco[roots[upar[roots].argmax()]] - fco[roots[upar[roots].argmin()]]) / max(1e-6, upar[roots].max() - upar[roots].min())
+        for sign in (1.0, -1.0):
+            for j in idx:
+                new[j] = rc + sign * wdir * (upar[j] - 0.5) * width + d * L_ * tpar[j]
+            # a frente do cartão tem de ficar para fora (senão a luz bate nele pelo avesso)
+            t0 = ftris[first_tri[c]]
+            if np.cross(new[t0[1]] - new[t0[0]], new[t0[2]] - new[t0[0]]).dot(card_n[c]) >= 0:
+                break
+        length[c] = L_
     fco = new
     set_world_co(feat, fco)
     print(f'cartoes: comprimento mediano {np.median(length) / M * 100:.0f} cm, penacho ate {length.max() / M * 100:.0f} cm')
@@ -628,7 +662,7 @@ if pattern > 0:
     at.data.foreach_set('vector', np.clip(gpos, 0, 1).astype(np.float32).ravel())
     # cor de vértice: só a variação de tom de cartão para cartão e as pontas um pouco mais claras
     vc = np.repeat((0.88 + 0.14 * cseed)[card][:, None], 3, 1)
-    vc = np.clip(vc + (1 - vc) * 0.35 * tpar[:, None], 0, 1)
+    vc = np.clip(vc + (1 - vc) * 0.08 * tpar[:, None], 0, 1)
     attr = feat.data.color_attributes.new(name='Col', type='FLOAT_COLOR', domain='POINT')
     attr.data.foreach_set('color', np.concatenate([vc, np.ones((len(vc), 1))], 1).astype(np.float32).ravel())
     feat.data.color_attributes.active_color = attr

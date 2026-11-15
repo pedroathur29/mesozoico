@@ -69,6 +69,9 @@ Tudo é calculado por código a cada quadro, em cima da pose de repouso.
 - **Peso:** o corpo vai para a perna de apoio antes de o outro pé sair do chão, cede um pouco logo depois de cada pouso e volta. As molas do quadril passam um pouco do alvo e assentam. Ele inclina para a frente ao arrancar e para trás ao frear.
 - **Atrasos em cadeia:** do quadril para a frente (tronco, pescoço, cabeça) e para trás (cauda), cada segmento recebe o movimento do anterior com um pequeno atraso. Para a frente o movimento vai diminuindo: a cabeça quase não gira nem balança de lado, é o corpo que se mexe por baixo dela. Na cauda a onda cresce até a ponta.
 - **Pés:** os dedos chegam um pouco erguidos, assentam e se espalham ao receber o peso; no impulso o calcanhar sobe e os dedos abrem de novo.
+- **Trilha estreita:** andando, os pés pisam perto da linha do meio do corpo (como nas pegadas de terópodes) e o pé no ar contorna a perna de apoio por fora. Ao parar, ele reabre a base com um passo de ajuste.
+- **Cauda como contrapeso:** a base da cauda desfaz boa parte do giro do quadril e fica na linha do corpo; a onda que chega à ponta é pequena. Depois de parar, a cauda volta devagar à pose de repouso, sem chicote.
+- **Braços e mãos:** em repouso o braço fica recolhido junto ao peito, com o cotovelo dobrado, o punho solto e os três dedos levemente curvados e separados (palmas viradas uma para a outra). Andando, só um contrapeso pequeno. Parado, punho e dedos mudam de leve, cada mão no seu tempo. No ato 6 o braço avança um pouco e os dedos abrem e fecham um depois do outro, sem abrir em leque.
 - **Pausas no repouso:** os pequenos movimentos de equilíbrio, cabeça e cauda correm em relógios próprios, que de tempos em tempos desaceleram até parar e depois retomam. Nas pausas ele só respira e pisca. O peso fica um tempo numa perna e depois passa para a outra, em vez de um vai e vem contínuo.
 - **Respiração variada:** cada respiração tem profundidade e duração diferentes, a pausa depois de expirar muda de tamanho e, de vez em quando, vem um suspiro.
 - **Respiração e narinas:** chaves de forma do modelo, não escala de ossos.
@@ -79,7 +82,7 @@ Tudo é calculado por código a cada quadro, em cima da pose de repouso.
 O arquivo original é preparado no Blender, por código. O script:
 - tira a sela e apara a plumagem;
 - dá volume às coxas e à base da cauda, estreita o tronco, recolhe a barriga e deita os tufos do tronco (pernas fortes, corpo esguio);
-- varia o comprimento e a direção dos tufos e cria um penacho na ponta da cauda e uma crina na nuca;
+- alinha a direção dos tufos à região do corpo (para trás no tronco, para baixo nos membros, para a ponta na cauda), deitados em camadas como telhas, com a frente sempre para fora; varia o comprimento e cria um penacho na ponta da cauda e uma crina na nuca;
 - troca a textura da plumagem por um desenho próprio de **filamentos simples** (fios sem ramificação). A textura original mostrava penas com raque e barbas, o que contradizia o texto do site;
 - pinta um padrão próprio: listras escuras, anéis na cauda, penacho creme, máscara escura no focinho, crista ferrugem, pernas e mãos escuras. No corpo o padrão vai para a textura; na plumagem vai para um "mapa em volume" que o site consulta pela posição de cada fio, e por isso as listras ficam nítidas;
 - acrescenta as chaves de forma da respiração e das narinas e dá material próprio aos olhos.
@@ -89,7 +92,7 @@ A imagem de *Jurassic World Evolution 3* enviada pelo autor serviu só de guia d
 ## Cena (`fonte/src/scene.js`)
 - **Terreno:** disco de solo com textura gerada por código, que se esfuma nas bordas.
 - **Sombras de contato:** uma sob o tronco e uma sob cada pé, que some quando o pé levanta. No nível alto de qualidade o chão também recebe a sombra projetada do corpo.
-- **Plumagem:** filamentos recortados (não translúcidos), que cedem ao movimento do corpo e a uma brisa leve. De longe os cartões ficam mais cheios, para a pelagem não virar chuvisco.
+- **Plumagem:** filamentos recortados (não translúcidos). Não há vento: cinco pontos do corpo (cabeça, peito, quadril, meio e ponta da cauda) têm cada um um "seguidor" preso por uma mola frouxa; quando o corpo se mexe, os filamentos daquela região ficam para trás, passam um pouco do ponto e assentam. Parado o corpo, a plumagem para. De longe os cartões ficam mais cheios, para a pelagem não virar chuvisco.
 - **Coníferas:** silhuetas ao fundo, quase da cor do fundo. Só aparecem as que estão atrás do dino, e a intensidade vem do keyframe `flora` (nada na abertura, tudo no ato 7).
 - **Layout:** em celulares, tablets em pé e janelas quase quadradas (proporção abaixo de 1,45) o texto vai para baixo e o dino para cima. O mesmo critério está no CSS e na cena.
 
@@ -103,7 +106,7 @@ node tools/check/tracos.cjs t.json && python3 tools/check/tracos.py t.json grafi
                                     # grava o movimento a 60 quadros por segundo e analisa: variação entre passos, velocidade do pé
                                     # ao tocar o chão, atrasos entre quadril, tronco, cabeça e cauda, pausas e respiração no repouso
 ```
-Última medição. Caminhada: o pé plantado se move menos de 1 mm; ele toca o chão a menos de 0,5 m/s em relação ao solo (antes 1,7 m/s); a duração dos passos varia 19%; o tronco responde ao giro do quadril 33 ms depois, o meio da cauda 200 ms e a ponta 480 ms; a ponta da cauda balança uns 35 cm na vertical e 75 cm de lado. Repouso: boca fechada em 93% do tempo; a profundidade das respirações varia 21%; fora das ações, a cabeça fica em pausa 23% do tempo e a cauda 19%. Enquadramento: nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro em seis tamanhos de tela, de 360×640 a 1440×810, e só em 1280×720, no ato 2, dois pontos do corpo ficam a menos de 24 px do texto.
+Última medição. Caminhada: o pé plantado se move menos de 1 mm; ele toca o chão a menos de 0,5 m/s em relação ao solo; a duração dos passos varia 19%; o tronco responde ao giro do quadril 33 ms depois, o meio da cauda 180 ms e a ponta 450 ms; na parada, a ponta da cauda se move a no máximo 0,7 m/s de lado (antes 4 m/s). Plumagem: andando, os filamentos cedem até 3,5 cm no corpo e 7 cm na ponta da cauda, e assentam em cerca de 1 s depois de parar. Repouso: boca fechada em 93% do tempo; fora das ações, a cabeça fica em pausa 24% do tempo e a cauda 26%. Enquadramento: nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro em seis tamanhos de tela, de 360×640 a 1440×810, e só em 1280×720, no ato 2, dois pontos do corpo ficam a menos de 24 px do texto.
 
 ## Elementos de documentário
 - **Anotações de anatomia** presas ao corpo do dino (filamentos, crista nasal, dentes, três dedos). Os pontos ficam em `ANCHORS`, em `fonte/src/scene.js`.

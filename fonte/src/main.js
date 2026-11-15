@@ -219,7 +219,8 @@ function frame(now) {
       if (t != null) { time = t * 1000; step = 0; } else if (dbg.simEnd != null) { time = dbg.simEnd * 1000; step = 0; }
     }
   }
-  gl.apply(s, time, step, m);
+  // testes: window.__cam = { cam, look, fov, shift, rot, ... } troca o enquadramento (para olhar um detalhe de perto)
+  gl.apply(DEBUG && window.__cam ? { ...s, ...window.__cam } : s, time, step, m);
   gl.render();
   // anotações de anatomia: seguem o ponto do corpo e só aparecem no ato delas
   for (const c of callouts) {
