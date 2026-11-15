@@ -39,7 +39,7 @@ src/style.css         visual: fundo escuro, dino branco, destaque azul-gelo
 public/assets/models/ yutyrannus.glb
 tools/clean_model.py  prepara o modelo no Blender (volume, filamentos simples, padrão de listras, penacho, chaves de forma da respiração)
 tools/publicar.mjs    copia o build para a raiz
-tools/check/          testes de passada, enquadramento e rolagem
+tools/check/          testes de passada, enquadramento e rolagem, e a análise do movimento (tracos)
 ```
 
 ## O que o rig permite (conferido no modelo)
@@ -63,11 +63,14 @@ Com `prefers-reduced-motion`, ficam só a câmera e as poses ligadas à rolagem:
 Tudo é calculado por código a cada quadro, em cima da pose de repouso.
 - **Pernas por cinemática inversa:** cada pé tem um alvo e a perna (coxa, canela, metatarso) é resolvida para alcançá-lo, com uma correção para o erro ficar em milímetros.
 - **Passada:** o corpo avança `travel` metros e cada pé plantado fica preso a um ponto do chão. O pé de trás levanta quando chega ao limite, vai à frente e pousa. A velocidade pedida é suavizada (acelera e freia aos poucos) e o corpo nunca passa do alcance da perna de apoio.
+- **Cada passo é um pouco diferente:** comprimento, altura, duração e o ponto onde o pé pisa variam de passo para passo, e a velocidade oscila de leve. Sem isso a caminhada vira metrônomo.
+- **O pé sai e chega na velocidade do chão:** no ar, ele ainda recua um pouco ao sair, passa do ponto e volta antes de tocar. Assim não chega "patinando", que era o que tirava o peso da pisada.
 - **O chão anda, o dino fica no quadro:** a cena desloca a textura do terreno e as coníferas pelo mesmo `travel`. Por isso os pés não deslizam.
-- **Corpo:** o quadril sobe no meio do passo, pende para a perna de apoio e gira com a passada; logo depois de cada pouso o corpo cede um pouco e volta (recebe o peso). O tronco gira ao contrário e flexiona de leve; os ombros e os braços fazem um contrapeso pequeno (o braço recua quando a perna do mesmo lado avança). Molas suavizam tudo.
+- **Peso:** o corpo vai para a perna de apoio antes de o outro pé sair do chão, cede um pouco logo depois de cada pouso e volta. As molas do quadril passam um pouco do alvo e assentam. Ele inclina para a frente ao arrancar e para trás ao frear.
+- **Atrasos em cadeia:** do quadril para a frente (tronco, pescoço, cabeça) e para trás (cauda), cada segmento recebe o movimento do anterior com um pequeno atraso. Para a frente o movimento vai diminuindo: a cabeça quase não gira nem balança de lado, é o corpo que se mexe por baixo dela. Na cauda a onda cresce até a ponta.
 - **Pés:** os dedos chegam um pouco erguidos, assentam e se espalham ao receber o peso; no impulso o calcanhar sobe e os dedos abrem de novo.
-- **Cabeça e cauda:** o pescoço cede a cada passo e a cabeça compensa, ficando quase nivelada; a cauda ondula para os lados e para cima e para baixo, com a onda correndo da base para a ponta.
-- **Atraso:** cauda, pescoço, cabeça e braços seguem o quadril com atraso crescente (filtros em cadeia), em vez de ondas fixas.
+- **Pausas no repouso:** os pequenos movimentos de equilíbrio, cabeça e cauda correm em relógios próprios, que de tempos em tempos desaceleram até parar e depois retomam. Nas pausas ele só respira e pisca. O peso fica um tempo numa perna e depois passa para a outra, em vez de um vai e vem contínuo.
+- **Respiração variada:** cada respiração tem profundidade e duração diferentes, a pausa depois de expirar muda de tamanho e, de vez em quando, vem um suspiro.
 - **Respiração e narinas:** chaves de forma do modelo, não escala de ossos.
 - **Agenda das ações de parado:** gerada por sorteio fixo (a mesma para o mesmo relógio, o que permite testar), mas sem ciclo: durações e intervalos variam.
 - **Giro dos keyframes (`rot`):** gira o dino junto com o chão, o que equivale à câmera orbitar em volta dele.
@@ -96,8 +99,11 @@ Três testes medem o que não dá para ver numa captura. Precisam do Playwright 
 node tools/check/passada.cjs        # anda, freia e volta a andar: quanto o pé plantado se move no chão e se a cabeça dá saltos
 node tools/check/enquadramento.cjs  # em vários tamanhos de tela: o dino cabe no quadro? encosta no texto?
 node tools/check/rolagem.cjs        # rola a página inteira como um usuário e mede saltos e deslizamento
+node tools/check/tracos.cjs t.json && python3 tools/check/tracos.py t.json grafico.png
+                                    # grava o movimento a 60 quadros por segundo e analisa: variação entre passos, velocidade do pé
+                                    # ao tocar o chão, atrasos entre quadril, tronco, cabeça e cauda, pausas e respiração no repouso
 ```
-Última medição: o pé plantado se move menos de 1 mm durante um apoio, andando ou rolando a página. Nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro em seis tamanhos de tela, de 360×640 a 1440×810, e só num deles (1280×720, ato 2) um ponto do corpo fica a menos de 24 px do texto. Nos atos de detalhe (4, 5 e 6) o corte é intencional.
+Última medição. Caminhada: o pé plantado se move menos de 1 mm; ele toca o chão a menos de 0,5 m/s em relação ao solo (antes 1,7 m/s); a duração dos passos varia 19%; o tronco responde ao giro do quadril 33 ms depois, o meio da cauda 200 ms e a ponta 480 ms; a ponta da cauda balança uns 35 cm na vertical e 75 cm de lado. Repouso: boca fechada em 93% do tempo; a profundidade das respirações varia 21%; fora das ações, a cabeça fica em pausa 23% do tempo e a cauda 19%. Enquadramento: nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro em seis tamanhos de tela, de 360×640 a 1440×810, e só em 1280×720, no ato 2, dois pontos do corpo ficam a menos de 24 px do texto.
 
 ## Elementos de documentário
 - **Anotações de anatomia** presas ao corpo do dino (filamentos, crista nasal, dentes, três dedos). Os pontos ficam em `ANCHORS`, em `fonte/src/scene.js`.
