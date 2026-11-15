@@ -11,6 +11,8 @@ O que faz:
   4. pattern: pinta um padrão de plumagem nas cores de vértice (multiplicam a textura): dorso mais
      escuro, faixas irregulares do dorso para os flancos, anéis na cauda, focinho escuro e uma faixa
      atrás do olho. É um desenho próprio (a cor real do animal é desconhecida). 0 desliga, 1 é o padrão;
+     Também grava em cada pena os atributos _TIP (0 na base, 1 na ponta) e _SEED (número fixo por pena),
+     que o site usa para balançar os filamentos;
   5. reduz as texturas para tex px e exporta .glb (WebP), mantendo o esqueleto.
 """
 import sys, os, math, bpy
@@ -233,16 +235,26 @@ if pattern > 0 and body:
         for i in range(len(fco)):
             cards.setdefault(find(i), []).append(i)
         values = [1.0] * len(fco)
-        for vs in cards.values():
+        tips = [0.0] * len(fco)       # 0 na base da pena, 1 na ponta (o site usa para balançar os filamentos)
+        seeds = [0.0] * len(fco)      # número fixo por pena, para cada uma balançar no seu tempo
+        for n, vs in enumerate(cards.values()):
             root = min(vs, key=lambda i: dist[i])          # vértice mais perto do corpo = base da pena
             far = max(dist[i] for i in vs) or 1.0
             mid = sum((fco[i] for i in vs), fco[root] * 0) / len(vs)   # meio do cartão: é a área que ele cobre
-            m = shade(mid, fdom[root])
+            seed = hash2(n * 0.37, 5.0)
+            m = shade(mid, fdom[root]) * (0.9 + 0.14 * seed)         # cada pena um pouco mais clara ou escura
             for i in vs:
                 tip = dist[i] / far                         # as pontas clareiam um pouco
-                values[i] = m + (1.0 - m) * 0.08 * tip
+                values[i] = min(1.0, m + (1.0 - m) * 0.08 * tip)
+                tips[i] = tip
+                seeds[i] = seed
         paint(feat, values)
+        # atributos extras (nomes com "_" na frente são exportados no glTF como atributos próprios)
+        for name, data in (('_TIP', tips), ('_SEED', seeds)):
+            at = fme.attributes.new(name=name, type='FLOAT', domain='POINT')
+            for i, val in enumerate(data):
+                at.data[i].value = val
         print(f'penas: {len(cards)} cartoes')
 
-bpy.ops.export_scene.gltf(filepath=dst, export_vertex_color='ACTIVE' if pattern > 0 else 'NONE', export_all_vertex_colors=False, export_active_vertex_color_when_no_material=True, export_format='GLB', export_image_format='WEBP', export_animations=False, export_skins=True)
+bpy.ops.export_scene.gltf(filepath=dst, export_vertex_color='ACTIVE' if pattern > 0 else 'NONE', export_all_vertex_colors=False, export_active_vertex_color_when_no_material=True, export_attributes=True, export_format='GLB', export_image_format='WEBP', export_animations=False, export_skins=True)
 print('tamanho final MB', round(os.path.getsize(dst) / 1e6, 2))

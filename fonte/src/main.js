@@ -67,7 +67,7 @@ function measure() {
 const VEC = ['cam', 'look', 'glow', 'bg', 'ink', 'acc'];
 const THEME = ['bg', 'ink', 'acc']; // cores do tema trocam rápido (quase um corte), o resto flui
 const sharp = (r) => smooth(Math.min(1, Math.max(0, (r - 0.38) / 0.24)));
-const NUM = ['rot', 'pitch', 'roll', 'shift', 'fov', 'glowA', 'glowX', 'glowY', 'light', 'human', 'walk', 'roar', 'sniff', 'ruffle', 'grab', 'nk'];
+const NUM = ['rot', 'pitch', 'roll', 'shift', 'fov', 'glowA', 'glowX', 'glowY', 'light', 'human', 'walk', 'roar', 'sniff', 'ruffle', 'grab', 'nk', 'flora'];
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpArr = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
 const smooth = (t) => t * t * (3 - 2 * t);
@@ -103,9 +103,8 @@ function paintGlow(s) {
   root.style.setProperty('--acc-rgb', rgb(s.acc));
   root.style.setProperty('--glow-c', s.glow.map(Math.round).join(','));
   root.style.setProperty('--glow-a', s.glowA.toFixed(3));
-  const narrow = innerWidth < 760;
-  root.style.setProperty('--glow-x', (narrow ? 50 : s.glowX) + '%');
-  root.style.setProperty('--glow-y', (narrow ? 28 : s.glowY) + '%');
+  root.style.setProperty('--glow-x', (gl.stacked ? 50 : s.glowX) + '%');
+  root.style.setProperty('--glow-y', (gl.stacked ? 28 : s.glowY) + '%');
 }
 
 /* ---------- textos: revelação, contagem dos números e títulos por palavra ---------- */
@@ -158,11 +157,11 @@ function setupReveals() {
 }
 
 /* ---------- loop de desenho ---------- */
-// movimento do dino: a fase do passo avança com a rolagem, e ele para (suavemente) quando a página para
-const motion = { phase: 0, moving: 0, lastY: null, idle: reduce ? 0 : 1 };
 const QS = new URLSearchParams(location.search);
+const FROZEN = DEBUG && !QS.has('live');   // ?debug congela atrasos e suavizações (capturas); ?debug&live mantém tudo como no site
 const callouts = $$('.callout').map((el) => ({ el, name: el.dataset.callout, act: +el.dataset.in, pos: { x: 0, y: 0, visible: false }, on: false }));
-const STRIDE = 2.9; // metros que o dino avança num ciclo completo de passo (para o pé não patinar na entrada)
+// estado do loop: última posição da página, velocidade de rolagem suavizada (px/s) e relógio
+const loop = { lastY: null, lastT: 0, scrollV: 0, idle: reduce ? 0 : 1 };
 
 // ponteiro (só mouse): a cabeça do dino acompanha de leve
 const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -171,37 +170,54 @@ addEventListener('pointermove', (e) => {
   pointer.tx = (e.clientX / innerWidth) * 2 - 1; pointer.ty = (e.clientY / innerHeight) * 2 - 1;
 }, { passive: true });
 
-// entrada: quando o loading termina, o dino chega andando pela esquerda
-const intro = { total: 12, dist: 0 };
+// entrada: quando o loading termina, o dino chega andando pela esquerda e freia até parar no lugar
+const intro = { total: 8.5, from: null };   // "from" = quanto ele já tinha andado quando a entrada começou
 function playIntro() {
-  if (reduce || DEBUG || scrollY > 40) return;
-  intro.dist = intro.total;
-  gsap.to(intro, { dist: 0, duration: 2.8, ease: 'power2.out', delay: 0.1 });
+  const rig = gl.rig();
+  if (reduce || DEBUG || scrollY > 40 || !rig) return;
+  intro.from = rig.travel;
 }
+
+// velocidade pedida ao dino (m/s). Ele anda nos atos com "walk" enquanto a página rola; o controlador de
+// passada (src/anim.js) acelera, freia e termina o passo sozinho, então parar de rolar não congela a pose.
+function walkCommand(s, remaining) {
+  if (reduce) return 0;
+  if (remaining > 0) return Math.min(2.1, Math.sqrt(2 * 1.5 * remaining) + 0.3);      // entrada: freia para parar no ponto
+  if (loop.scrollV < 45) return 0;
+  return s.walk * Math.min(2.4, 0.85 + loop.scrollV / 900);
+}
+
 function frame(now) {
-  if (document.hidden) return;
+  if (document.hidden) { loop.lastT = 0; return; }
+  const dt = loop.lastT ? Math.min(0.05, (now - loop.lastT) / 1000) : 1 / 60;
+  loop.lastT = now;
   const y = lenis ? lenis.scroll : scrollY;
-  const dy = motion.lastY === null ? 0 : Math.abs(y - motion.lastY);
-  motion.lastY = y;
-  motion.phase += Math.min(dy, 120) * 0.011;            // ~570 px de rolagem = um ciclo completo (dois passos)
-  motion.moving += ((dy > 0.4 ? 1 : 0) - motion.moving) * (dy > 0.4 ? 0.2 : 0.06);
+  const dy = loop.lastY === null ? 0 : Math.abs(y - loop.lastY);
+  loop.lastY = y;
+  loop.scrollV += (Math.min(dy / dt, 6000) - loop.scrollV) * (1 - Math.exp(-dt * 9));
   const target = stateAt(y);
-  const s = follow(target, reduce || DEBUG ? 1 : 0.14); // ?debug: sem atraso (testes em máquinas lentas)
+  // a câmera "chega" sem trancos; o fator não depende da taxa de quadros. ?debug: sem atraso (testes em máquinas lentas)
+  const s = follow(target, reduce || FROZEN ? 1 : 1 - Math.exp(-dt * 8.5));
   paintGlow(s);
-  pointer.x += (pointer.tx - pointer.x) * 0.06; pointer.y += (pointer.ty - pointer.y) * 0.06;
-  const arriving = Math.min(1, intro.dist / 1.4); // as pernas assentam no último metro e meio
-  const m = {
-    walk: reduce ? 0 : Math.max(s.walk * motion.moving, arriving),
-    phase: motion.phase + ((intro.total - intro.dist) / STRIDE) * Math.PI * 2,
-    roar: s.roar, idle: motion.idle, enter: intro.dist, pointer, snap: reduce || DEBUG,
-  };
-  // ?debug&walk=1&phase=1.5&roar=1&enter=5&t=2 fixa a pose (para capturas de teste)
-  if (DEBUG) for (const k of ['walk', 'phase', 'roar', 'idle', 'enter']) if (QS.has(k)) m[k] = +QS.get(k);
-  // no console (ou em testes automáticos): window.__dbg = { t: 3.2, walk: 1, phase: 2 } troca a pose sem recarregar
+  pointer.x += (pointer.tx - pointer.x) * (1 - Math.exp(-dt * 4)); pointer.y += (pointer.ty - pointer.y) * (1 - Math.exp(-dt * 4));
+  const rig = gl.rig();
+  const remaining = rig && intro.from !== null ? Math.max(0, intro.total - (rig.travel - intro.from)) : 0;
+  const m = { speed: walkCommand(s, remaining), roar: s.roar, idle: loop.idle, enter: remaining, pointer, snap: reduce || FROZEN };
+  // Testes: ?debug liga window.__dbg. { t: 3 } congela o relógio; { speed, roar, enter, idle } trocam os comandos;
+  // { sim: { time: 2.5, speed: 1.8 } } faz o dino andar "por baixo dos panos" antes da captura.
   const dbg = DEBUG && window.__dbg;
-  if (dbg) Object.assign(m, dbg);
-  const time = dbg && dbg.t != null ? dbg.t * 1000 : DEBUG && QS.has('t') ? +QS.get('t') * 1000 : now;
-  gl.apply(s, time, m);
+  let time = now, step = dt;
+  if (DEBUG) {
+    for (const k of ['speed', 'roar', 'idle', 'enter']) if (QS.has(k)) m[k] = +QS.get(k);
+    if (QS.has('t')) { time = +QS.get('t') * 1000; step = 0; }
+    if (dbg) {
+      const { t, sim, ...rest } = dbg;
+      Object.assign(m, rest);
+      if (sim && rig) { dbg.simEnd = rig.simulate(sim.time, sim.speed, { ...m, look: null }, sim.t0 || 0); delete dbg.sim; }
+      if (t != null) { time = t * 1000; step = 0; } else if (dbg.simEnd != null) { time = dbg.simEnd * 1000; step = 0; }
+    }
+  }
+  gl.apply(s, time, step, m);
   gl.render();
   // anotações de anatomia: seguem o ponto do corpo e só aparecem no ato delas
   for (const c of callouts) {
@@ -215,6 +231,7 @@ function frame(now) {
     if (on !== c.on) { c.on = on; c.el.classList.toggle('is-on', on); }
   }
   monitor.tick(now);
+  if (DEBUG && window.__onFrame) window.__onFrame(s);
 }
 
 function start() {
