@@ -26,10 +26,16 @@ const PAL = new URLSearchParams(location.search).get('pal') || 'noite';
 const TONES = { 1: [233, 228, 214], 2: [226, 221, 205], 3: [236, 226, 204], 4: [221, 225, 223], 5: [234, 224, 206], 6: [225, 220, 205], 7: [230, 230, 217] };
 const NIGHTS = { 1: [10, 20, 29], 2: [8, 31, 40], 3: [17, 28, 46], 4: [12, 24, 34], 5: [20, 24, 38], 6: [10, 20, 29], 7: [11, 27, 30] };
 
-const K = (act, at, pal, p) => (
-  PAL === 'osso' ? { act, at, ...D, ...OSSO, bg: TONES[act], ...p, glowA: 0 }
-  : PAL === 'noite' ? { act, at, ...D, ...NOITE, bg: NIGHTS[act], ...p }
-  : { act, at, ...D, ...pal, ...p });
+// O ato 2 termina depois de uma volta completa (rot = 2π). Do ato 3 em diante somamos essa volta,
+// senão o dino "desenrolaria" 360° de uma vez na passagem do ato 2 para o 3.
+const TURN = Math.PI * 2;
+const K = (act, at, pal, p) => {
+  const k = PAL === 'osso' ? { act, at, ...D, ...OSSO, bg: TONES[act], ...p, glowA: 0 }
+    : PAL === 'noite' ? { act, at, ...D, ...NOITE, bg: NIGHTS[act], ...p }
+    : { act, at, ...D, ...pal, ...p };
+  if (act >= 3) k.rot += TURN;
+  return k;
+};
 
 export const KEYFRAMES = [
   // 1 · Abertura (OSSO): dino grande cortando o título que fica atrás dele
@@ -38,7 +44,7 @@ export const KEYFRAMES = [
   // 2 · Corpo inteiro (NOITE): órbita completa, passando por cima
   K(2, 0.05, NOITE, { cam: [0, 2.7, 15],      look: [0, 1.7, 0],     rot: 0,     shift: 0.32, fov: 36, glowY: 55, walk: 1 }),
   K(2, 0.5,  NOITE, { cam: [0, 8.5, 13.5],    look: [0, 1.4, 0],     rot: 3.14,  shift: 0.32, fov: 36, glowY: 52, walk: 1 }),
-  K(2, 0.95, NOITE, { cam: [0, 2.7, 15],      look: [0, 1.7, 0],     rot: 6.283, shift: 0.32, fov: 36, glowY: 55, walk: 1 }),
+  K(2, 0.95, NOITE, { cam: [0, 2.7, 15],      look: [0, 1.7, 0],     rot: TURN,  shift: 0.32, fov: 36, glowY: 55, walk: 1 }),
   // 3 · Escala (OSSO): perfil limpo com o humano; depois vista alta e inclinada
   K(3, 0.05, OSSO,  { cam: [0, 1.9, 21],      look: [0, 1.6, 0],     rot: 0,     shift: -0.46, fov: 36, human: 1, sniff: 1 }),
   K(3, 0.95, OSSO,  { cam: [6.5, 10, 15],     look: [0.5, 1.4, 0],   rot: 0,     roll: -0.12, shift: -0.46, fov: 34, human: 1, sniff: 1 }),

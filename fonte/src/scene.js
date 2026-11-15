@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildPlaceholderDino } from './dino.js';
 import { TIERS } from './quality.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { createRig } from './anim.js';
 
 // Onde fica a pessoa de 1,75 m do ato 3: um pouco à frente do focinho, do lado da câmera.
@@ -60,22 +61,29 @@ export function createScene(canvas, tier) {
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.toneMappingExposure = 0.98;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
 
+  // luz ambiente por imagem: uma "sala" neutra gerada por código (sem arquivo), que dá reflexos suaves na pele, nos dentes e nas garras
+  {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.38;
+    pmrem.dispose();
+  }
   // luzes neutras (luz colorida tingia a plumagem branca): chave levemente quente, contraluz fria e forte para recortar a silhueta
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x8f96a3, 1.0);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x4d5560, 0.42);
   const key = new THREE.DirectionalLight(0xfff3e4, 2.2);
   key.position.set(8, 12, 9);
   key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
   Object.assign(key.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 40 });
-  key.shadow.bias = -0.0004;
-  const rim = new THREE.DirectionalLight(0xdbe8ff, 3.2);
-  rim.position.set(-9, 7, -10);
-  scene.add(hemi, key, rim);
+  key.shadow.bias = -0.0006; key.shadow.normalBias = 0.04; key.shadow.radius = 3;
+  const back = new THREE.DirectionalLight(0xdbe8ff, 3.2);
+  back.position.set(-9, 7, -10);
+  scene.add(hemi, key, back);
 
   // chão sugerido só por duas manchas: uma poça de luz fria (assenta o dino no fundo escuro) e a sombra de contato
   const pool = new THREE.Mesh(new THREE.PlaneGeometry(22, 9), new THREE.MeshBasicMaterial({
@@ -121,7 +129,22 @@ export function createScene(canvas, tier) {
   ruler.visible = false;
   scene.add(ruler);
 
-  const state = { tier, w: 1, h: 1, narrow: false, lastRot: null, spin: 0 };
+  // brilho de contorno (contraluz na pelagem): acrescentado ao material do dino, mais forte nas bordas viradas para cima
+  const rim = { value: new THREE.Color(0.8, 0.9, 1.0) };
+  function addRim(mat) {
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uRim = rim;
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nuniform vec3 uRim;')
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+          float rimF = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.4);
+          totalEmissiveRadiance += uRim * rimF * (0.3 + 0.7 * saturate(normal.y)) * (0.35 + 0.65 * diffuseColor.r);`);
+    };
+    mat.customProgramCacheKey = () => 'dino-rim';
+    mat.needsUpdate = true;
+  }
+
+  const state = { tier, w: 1, h: 1, narrow: false, lastRot: null, spin: 0, turnPhase: 0 };
   let feather = null;      // malha da camada de penas (some no nível baixo de qualidade)
   const anchors = {};      // nome -> { bone, local }
   const _t = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _h = new THREE.Vector3();
@@ -172,6 +195,9 @@ export function createScene(canvas, tier) {
       const d = state.lastRot === null ? 0 : s.rot - state.lastRot;
       state.lastRot = s.rot;
       state.spin += (Math.min(0.06, Math.max(-0.06, d)) - state.spin) * 0.15;
+      // quando o corpo gira, ele dá passos para acompanhar (em vez de girar como estátua numa base)
+      if (!motion.snap) state.turnPhase += Math.min(0.08, Math.abs(d)) * 5.5;
+      const turn = motion.snap ? 0 : Math.min(0.85, Math.abs(state.spin) * 45);
       // alvo do olhar: a câmera, deslocada pelo ponteiro; no ato 3 passa a ser a pessoa
       const p = motion.pointer || { x: 0, y: 0 };
       _r.setFromMatrixColumn(camera.matrixWorld, 0); _u.setFromMatrixColumn(camera.matrixWorld, 1);
@@ -179,14 +205,15 @@ export function createScene(canvas, tier) {
       _h.set(HUMAN.x, HUMAN.height * 0.72, HUMAN.z);
       _t.lerp(_h, s.sniff);
       dino.worldToLocal(_t);
-      rig.update(time / 1000, { ...motion, sniff: s.sniff, ruffle: s.ruffle, grab: s.grab, spin: motion.snap ? 0 : state.spin, look: _t, lookK: 0.5 + 0.45 * s.sniff });
+      rig.update(time / 1000, { ...motion, walk: Math.max(motion.walk || 0, turn), phase: (motion.phase || 0) + state.turnPhase, sniff: s.sniff, ruffle: s.ruffle, grab: s.grab, spin: motion.snap ? 0 : state.spin, look: _t, lookK: 0.5 + 0.45 * s.sniff });
     }
 
     // chão: em fundo claro a sombra escurece; em fundo escuro quem aparece é a poça de luz
     const lum = (s.bg[0] + s.bg[1] + s.bg[2]) / 765;
     contact.material.opacity = 0.2 + 0.3 * lum;
     pool.material.opacity = 0.11 * (1 - lum);
-    key.intensity = 0.4 + 2.0 * s.light; rim.intensity = 1.0 + 2.4 * s.light;
+    key.intensity = 0.4 + 2.0 * s.light; back.intensity = 1.0 + 2.4 * s.light;
+    rim.value.setRGB(0.8, 0.9, 1.0).multiplyScalar(0.38 * s.light);
 
     human.visible = ruler.visible = s.human > 0.01;
     if (human.visible) {
@@ -203,7 +230,18 @@ export function createScene(canvas, tier) {
     rig = createRig(obj); // antes de pendurar na cena: mede os ossos com o dino sem giro
     // âncoras das anotações: guarda cada ponto no espaço do osso, para acompanhar a animação
     obj.updateMatrixWorld(true);
-    const bones = []; obj.traverse((o) => { if (o.isBone) bones.push(o); if (o.isMesh && o.material && /Feather/i.test(o.material.name)) feather = o; });
+    const bones = [];
+    obj.traverse((o) => {
+      if (o.isBone) bones.push(o);
+      if (!o.isMesh || !o.material) return;
+      const isFeather = /Feather/i.test(o.material.name);
+      if (isFeather) feather = o;
+      // penas foscas (pelagem não brilha); pele um pouco mais lisa. Sombras próprias só valem no nível alto.
+      o.material.roughness = isFeather ? 0.92 : 0.68;
+      o.material.envMapIntensity = isFeather ? 0.6 : 1;
+      o.castShadow = !isFeather; o.receiveShadow = true;
+      addRim(o.material);
+    });
     for (const [name, [re, p]] of Object.entries(ANCHORS)) {
       const bone = bones.find((b) => re.test(b.name));
       if (bone) anchors[name] = { bone, local: bone.worldToLocal(obj.localToWorld(new THREE.Vector3(...p))) };

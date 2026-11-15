@@ -197,13 +197,21 @@ function frame(now) {
   };
   // ?debug&walk=1&phase=1.5&roar=1&enter=5&t=2 fixa a pose (para capturas de teste)
   if (DEBUG) for (const k of ['walk', 'phase', 'roar', 'idle', 'enter']) if (QS.has(k)) m[k] = +QS.get(k);
-  gl.apply(s, DEBUG && QS.has('t') ? +QS.get('t') * 1000 : now, m);
+  // no console (ou em testes automáticos): window.__dbg = { t: 3.2, walk: 1, phase: 2 } troca a pose sem recarregar
+  const dbg = DEBUG && window.__dbg;
+  if (dbg) Object.assign(m, dbg);
+  const time = dbg && dbg.t != null ? dbg.t * 1000 : DEBUG && QS.has('t') ? +QS.get('t') * 1000 : now;
+  gl.apply(s, time, m);
   gl.render();
   // anotações de anatomia: seguem o ponto do corpo e só aparecem no ato delas
   for (const c of callouts) {
     const a = c.act === activeAct ? gl.anchor(c.name, c.pos) : null;
     const on = !!(a && a.visible);
-    if (on) c.el.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
+    if (on) {
+      c.el.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
+      const left = a.x > innerWidth * 0.62; // perto da borda direita, o rótulo abre para a esquerda
+      if (left !== c.left) { c.left = left; c.el.classList.toggle('callout--left', left); }
+    }
     if (on !== c.on) { c.on = on; c.el.classList.toggle('is-on', on); }
   }
   monitor.tick(now);

@@ -37,12 +37,14 @@ src/anim.js           animação por código: respira, pisca, olha para a câmer
 src/quality.js        qualidade adaptativa (3 níveis, mede fps; o nível baixo esconde a camada de penas)
 src/style.css         visual: fundo escuro, dino branco, destaque azul-gelo
 public/assets/models/ yutyrannus.glb
-tools/clean_model.py  prepara o modelo no Blender (tira a sela, apara as penas, clareia, reduz texturas)
+tools/clean_model.py  prepara o modelo no Blender (tira a sela, apara as penas, clareia, pinta o padrão de plumagem, reduz texturas)
 tools/publicar.mjs    copia o build para a raiz
 ```
 
 ## O que o dino faz
-- **Sempre:** respira, balança a cauda, pisca e vira a cabeça para a câmera (no computador, acompanha o mouse).
+- **Sempre:** respira, passa o peso de uma perna para a outra com os pés plantados, balança a cauda, pisca, move a cabeça em saltos curtos (como uma ave) e a vira para a câmera (no computador, acompanha o mouse).
+- **De tempos em tempos (a cada ~5 s, parado):** olha para o lado, troca um pé de lugar, fareja o ar, abana a cauda, abaixa a cabeça, sacode a cabeça ou boceja.
+- **Ao girar:** dá passos para acompanhar o giro, em vez de rodar como uma estátua.
 - **Abertura:** entra andando pela esquerda quando o loading termina.
 - **Atos 2 e 7:** anda enquanto a página rola e para quando ela para. Ao girar, a cauda fica para trás.
 - **Ato 3:** abaixa a cabeça e fareja a pessoa de 1,75 m. Uma régua no chão marca os 9 m.

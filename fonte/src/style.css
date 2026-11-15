@@ -118,6 +118,7 @@ h2 { margin: 0 0 14px; font-weight: 900; font-stretch: 78%; font-size: clamp(28p
 .callout i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc-rgb)); box-shadow: 0 0 0 5px rgba(var(--acc-rgb), .22); }
 .callout::before { content: ""; position: absolute; left: 0; bottom: 6px; width: 1px; height: 46px; background: rgba(var(--ink-rgb), .55); }
 .callout span { position: absolute; left: -1px; bottom: 58px; white-space: nowrap; padding: 3px 8px; font: 600 10px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--ink-rgb)); background: rgba(var(--bg-rgb), .72); border-left: 1px solid rgba(var(--ink-rgb), .55); }
+.callout--left span { left: auto; right: -1px; border-left: 0; border-right: 1px solid rgba(var(--ink-rgb), .55); }
 .callout--down::before { bottom: auto; top: 6px; }
 .callout--down span { bottom: auto; top: 58px; }
 
