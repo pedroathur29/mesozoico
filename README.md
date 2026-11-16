@@ -99,6 +99,15 @@ A imagem de *Jurassic World Evolution 3* enviada pelo autor serviu só de guia d
 - **Coníferas:** silhuetas ao fundo, quase da cor do fundo. Só aparecem as que estão atrás do dino, e a intensidade vem do keyframe `flora` (nada na abertura, tudo no ato 7).
 - **Layout:** em celulares, tablets em pé e janelas quase quadradas (proporção abaixo de 1,45) o texto vai para baixo e o dino para cima. O mesmo critério está no CSS e na cena.
 
+## Desempenho
+O que travava, medido com o perfil de quadros (`?debug`, `window.__prof`):
+- **Compilação no meio da rolagem:** coníferas, pessoa e régua compilavam seus materiais na primeira vez que entravam em cena. Agora tudo é compilado durante o carregamento, com tudo visível (`warm()` em `fonte/src/scene.js`). Numa rolagem completa: nenhuma compilação depois de a página aparecer.
+- **Estilo da página a cada quadro:** as cores eram regravadas na raiz da página sempre, com casas decimais que mudavam, e o navegador recalculava o estilo de tudo. Agora só grava quando o valor arredondado muda, e as do brilho de fundo ficam no próprio elemento (`paintGlow` em `fonte/src/main.js`).
+- **Troca automática de qualidade:** ligar ou desligar sombras recompila todos os materiais. O nível é escolhido uma vez, na abertura; depois o ajuste mexe só na resolução, de 0,25 em 0,25, sem recompilar, e só volta a subir com folga longa (`fonte/src/quality.js`).
+- **Plumagem:** é o que mais custa desenhar (cerca de 70% do quadro, proporcional à área de tela). Com o dino pequeno na tela, desenha menos tufos (até 60%, os longos sempre) e os que ficam ganham um pouco de opacidade; de perto, nada muda. Os tufos são embaralhados uma vez no carregamento para o recorte ser uniforme.
+- **Fora do quadro:** se a câmera perde o dino de vista, o desenho pausa (a animação segue, para não haver salto na volta). Com a aba em segundo plano, tudo pausa.
+- O granulado da tela cobria quatro vezes a área visível; agora cobre só a tela.
+
 ## Como conferir (`fonte/tools/check/`)
 Três testes medem o que não dá para ver numa captura. Precisam do Playwright e do site servido (`npm run build && npm run preview -- --port 4173`).
 ```bash
@@ -109,7 +118,7 @@ node tools/check/tracos.cjs t.json && python3 tools/check/tracos.py t.json grafi
                                     # grava o movimento a 60 quadros por segundo e analisa: variação entre passos, velocidade do pé
                                     # ao tocar o chão, atrasos entre quadril, tronco, cabeça e cauda, pausas e respiração no repouso
 ```
-Última medição. Caminhada: o pé plantado se move menos de 1 mm; ele toca o chão a menos de 0,5 m/s em relação ao solo; aceleração do corpo de no máximo 2,6 m/s², sem nenhuma freada brusca (antes 111 m/s² nos travamentos). Cauda, de lado: base 15 cm, meio 13 cm, ponta 12 cm, com o meio 280 ms e a ponta 470 ms depois do quadril. Focinho: 10 cm de sobe e desce e 9 cm de lado (antes 21 e 13). Rolagem: numa rolagem contínua igual para as duas versões, o tranco médio da câmera caiu 62%. Repouso: boca fechada em 93% do tempo; fora das ações, a cabeça fica em pausa 24% do tempo e a cauda 33%. Enquadramento: nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro em seis tamanhos de tela, de 360×640 a 1440×810, e só em 1280×720, no ato 2, dois pontos do corpo ficam a menos de 24 px do texto.
+Última medição. Rolagem: nenhuma compilação de material depois de a página aparecer (antes duas, no início e na cena de escala); recálculo de estilo 60% menor. Simulando a página inteira a 60 quadros por segundo, devagar, depressa e em rajadas, não há salto isolado na câmera, no focinho, no quadril, na cabeça ou na cauda (o pior quadro fica entre 1,1 e 1,7 vez o 99º percentil). Caminhada: o pé plantado se move menos de 1 mm; aceleração do corpo de no máximo 2,6 m/s², sem freadas bruscas. Cauda, de lado: base 15 cm, meio 12 cm, ponta 12 cm. Repouso: boca fechada em 93% do tempo. Enquadramento: nos atos de corpo inteiro (1, 2, 3 e 7) o dino cabe inteiro no quadro e não encosta no texto em nenhum dos seis tamanhos de tela, de 360×640 a 1440×810; no habitat ele termina com cerca de 1/4 da largura da tela (antes 1/9).
 
 ## Elementos de documentário
 - **Anotações de anatomia** presas ao corpo do dino (filamentos, crista nasal, dentes, três dedos). Os pontos ficam em `ANCHORS`, em `fonte/src/scene.js`.

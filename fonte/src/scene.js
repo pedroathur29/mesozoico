@@ -247,7 +247,10 @@ export function createScene(canvas, tier) {
   // brilho de contorno (contraluz na pelagem), mais forte nas bordas viradas para cima
   const rim = { value: new THREE.Color(0.8, 0.9, 1.0) };
   // filamentos: as pontas das penas cedem ao movimento do corpo e a uma brisa leve
-  const fur = { uSw: { value: [0, 1, 2, 3, 4].map(() => new THREE.Vector3()) }, uSx: { value: [0, 0.25, 0.5, 0.75, 1] }, uPat: { value: null } };
+  const fur = { uSw: { value: [0, 1, 2, 3, 4].map(() => new THREE.Vector3()) }, uSx: { value: [0, 0.25, 0.5, 0.75, 1] }, uPat: { value: null }, uFill: { value: 1 } };
+  // nível de detalhe da plumagem: com o dino pequeno na tela desenha menos tufos (os longos ficam sempre) e os que
+  // ficam ganham um pouco mais de opacidade. Os tufos são embaralhados no carregamento para o recorte ser uniforme.
+  const furLod = { tris: 0, keep: 0, frac: 1, force: null };
   const furFit = { a: 0.5, b: 0 };   // onde cada ponto do corpo cai no eixo "comprimento" do atributo aPat (medido no modelo)
   // Padrão da plumagem: um "mapa em volume" (grade 32 x 256 x 80 em volta do corpo, guardada como imagem de fatias
   // lado a lado). Cada pedacinho de filamento consulta a grade pela posição de repouso, então as listras atravessam
@@ -276,6 +279,7 @@ export function createScene(canvas, tier) {
       const rows = PAT.ny / PAT.cols;
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
+          uniform float uFill;
           uniform sampler2D uPat;
           varying vec3 vPat;
           vec3 patSlice(float i, vec2 inTile) { return texture2D(uPat, (vec2(mod(i, ${PAT.cols}.0), floor(i / ${PAT.cols}.0)) + inTile) / vec2(${PAT.cols}.0, ${rows}.0)).rgb; }
@@ -288,7 +292,7 @@ export function createScene(canvas, tier) {
         .replace('#include <color_fragment>', `#include <color_fragment>
           diffuseColor.rgb *= patAt(vPat);
           #ifdef USE_MAP
-            diffuseColor.a = min(1.0, diffuseColor.a * (1.0 + 0.38 * max(0.0, log2(length(fwidth(vMapUv)) * 1024.0))));
+            diffuseColor.a = min(1.0, diffuseColor.a * uFill * (1.0 + 0.38 * max(0.0, log2(length(fwidth(vMapUv)) * 1024.0))));
           #endif`);
     };
     mat.customProgramCacheKey = () => (isFeather ? 'dino-fur' : 'dino-skin');
@@ -302,6 +306,7 @@ export function createScene(canvas, tier) {
   const _t = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _h = new THREE.Vector3(), _m3 = new THREE.Matrix3(), _m4 = new THREE.Matrix4();
   const layout = matchMedia('(max-aspect-ratio: 29/20), (max-width: 760px)');   // mesmo corte do CSS: texto embaixo, dino em cima
 
+  // nível de qualidade: escolhido uma vez, antes de compilar os materiais (sombras mudam todos os programas)
   function applyTier(t) {
     const T = TIERS[t];
     state.tier = t;
@@ -311,6 +316,28 @@ export function createScene(canvas, tier) {
     if (feather) feather.visible = T.feathers;
     shadowCatcher.visible = T.shadows;
     resize();
+  }
+  // ajuste fino em tempo real: só a resolução (não recompila nada)
+  function setPixelRatio(p) { if (Math.abs(renderer.getPixelRatio() - p) > 0.01) { renderer.setPixelRatio(p); resize(); } }
+  function dropFeathers() { state.noFeathers = true; if (feather) feather.visible = false; }
+
+  // Compila todos os materiais antes de a página aparecer, com tudo visível (coníferas, pessoa, régua, plumagem,
+  // sombras). Sem isso, cada um compilava na primeira vez que entrava em cena, no meio da rolagem, e travava.
+  async function warm() {
+    const hidden = [];
+    scene.traverse((o) => { if (!o.visible && o !== scene) { hidden.push(o); o.visible = true; } });
+    const tm = trees.material.opacity; trees.material.opacity = 0.5;
+    try { await (renderer.compileAsync ? renderer.compileAsync(scene, camera) : renderer.compile(scene, camera)); } catch (e) { renderer.compile(scene, camera); }
+    renderer.render(scene, camera);                 // também prepara o mapa de sombras e envia texturas à placa de vídeo
+    hidden.forEach((o) => { o.visible = false; });
+    trees.material.opacity = tm;
+  }
+  // o dino está no quadro? (esfera em volta do corpo contra o campo de visão da câmera)
+  const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4(), _sph = new THREE.Sphere(new THREE.Vector3(), 6.5);
+  function inView() {
+    _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); _fr.setFromProjectionMatrix(_pm);
+    dinoPivot.getWorldPosition(_sph.center);
+    return _fr.intersectsSphere(_sph);
   }
   function resize() {
     state.w = innerWidth; state.h = innerHeight; state.stacked = layout.matches;
@@ -385,6 +412,7 @@ export function createScene(canvas, tier) {
       m.scale.setScalar(1 + f.h * 1.5);
     });
 
+    updateFurLod();
     key.intensity = 0.4 + 2.0 * s.light; back.intensity = 1.0 + 2.4 * s.light;
     rim.value.setRGB(0.8, 0.9, 1.0).multiplyScalar(0.38 * s.light);
 
@@ -429,6 +457,7 @@ export function createScene(canvas, tier) {
         const pat = g.attributes._pat && o.material.emissiveMap;
         if (pat) { pat.generateMipmaps = false; pat.minFilter = pat.magFilter = THREE.LinearFilter; pat.wrapS = pat.wrapT = THREE.ClampToEdgeWrapping; pat.needsUpdate = true; fur.uPat.value = pat; }
         o.material.emissiveMap = null; o.material.emissive.setScalar(0);
+        shuffleCards(g);
         // filamentos recortados (não translúcidos): gravam profundidade, então se ordenam direito e pesam menos
         o.material.transparent = false; o.material.depthWrite = true; o.material.alphaTest = 0.32; o.material.alphaToCoverage = true;
         o.material.side = THREE.DoubleSide;
@@ -444,16 +473,48 @@ export function createScene(canvas, tier) {
       const bone = allBones.find((b) => re.test(b.name));
       if (bone) anchors[name] = { bone, local: bone.worldToLocal(obj.localToWorld(new THREE.Vector3(...p))) };
     }
-    if (feather) feather.visible = TIERS[state.tier].feathers;
+    if (feather) feather.visible = TIERS[state.tier].feathers && !state.noFeathers;
     dino = obj; dino.position.y = -PIVOT_Y; dinoPivot.add(dino);
+  }
+
+  // Reordena os triângulos da plumagem, uma vez: tufos longos (penacho, crina) primeiro, o resto embaralhado.
+  // Assim "desenhar os primeiros N" dá sempre um recorte uniforme do corpo inteiro.
+  function shuffleCards(g) {
+    const idx = g.index.array, nV = g.attributes.position.count, tip = g.attributes.aTip.array;
+    const par = new Int32Array(nV).map((_, i) => i);
+    const find = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+    for (let t = 0; t < idx.length; t += 3) { const a = find(idx[t]); par[find(idx[t + 1])] = a; par[find(idx[t + 2])] = a; }
+    const cards = new Map();
+    for (let t = 0; t < idx.length; t += 3) { const r = find(idx[t]); if (!cards.has(r)) cards.set(r, { tris: [], len: 0 }); const c = cards.get(r); c.tris.push(t); c.len = Math.max(c.len, tip[idx[t]], tip[idx[t + 1]], tip[idx[t + 2]]); }
+    const list = [...cards.values()];
+    const key = list.map((c) => (c.len > 1.25 ? -1 : 0) + rnd());   // longos primeiro; dentro de cada grupo, sorteio fixo
+    const order = list.map((_, i) => i).sort((a, b) => key[a] - key[b]);
+    const out = new idx.constructor(idx.length); let w = 0;
+    for (const i of order) for (const t of list[i].tris) { out[w++] = idx[t]; out[w++] = idx[t + 1]; out[w++] = idx[t + 2]; }
+    g.index.array.set(out); g.index.needsUpdate = true;
+    furLod.tris = idx.length / 3;
+    furLod.keep = list.filter((c) => c.len > 1.25).reduce((s, c) => s + c.tris.length, 0);
+  }
+  // fração de tufos pelo tamanho do dino na tela (px reais): 100% a partir de ~720 px de comprimento, 60% abaixo de 260 px
+  function updateFurLod() {
+    if (!feather || !furLod.tris) return;
+    const dist = Math.max(1, camera.position.distanceTo(dinoPivot.position));
+    const lenPx = 9 * state.h * renderer.getPixelRatio() / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dist);
+    const f = furLod.force ?? (0.6 + 0.4 * THREE.MathUtils.smoothstep(lenPx, 260, 720));
+    if (Math.abs(f - furLod.frac) < 0.02 && !(f === 1 && furLod.frac !== 1)) return;
+    furLod.frac = f;
+    const n = f >= 0.999 ? furLod.tris : Math.max(furLod.keep, Math.round(furLod.tris * f));
+    feather.geometry.setDrawRange(0, n * 3);
+    fur.uFill.value = 1 + 0.6 * (1 - n / furLod.tris);
   }
 
   const project = (v, out) => { v.project(camera); out.x = (v.x + 1) / 2 * state.w; out.y = (1 - v.y) / 2 * state.h; out.front = v.z < 1; return out; };
 
   applyTier(tier);
   return {
-    renderer, scene, camera, apply, resize, setTier: applyTier, setModel, rig: () => rig,
+    renderer, scene, camera, apply, resize, setTier: applyTier, setPixelRatio, dropFeathers, inView, warm, setModel, rig: () => rig,
     get stacked() { return state.stacked; },
+    furLod,
     // posição na tela (px) de um ponto do corpo; chamar depois de render(), quando as matrizes estão atualizadas
     anchor(name, out) {
       const a = anchors[name];
@@ -475,7 +536,5 @@ export function createScene(canvas, tier) {
       return rig.bones.ball.map((b, i) => { env.worldToLocal(_t.setFromMatrixPosition(b.matrixWorld)); const f = rig.feet()[i]; return { x: _t.x + rig.travel, y: _t.y, z: _t.z, planted: f.planted }; });
     },
     render: () => renderer.render(scene, camera),
-    // compila shaders antes do 1º quadro visível (evita travada ao entrar)
-    warm: () => renderer.compile(scene, camera),
   };
 }

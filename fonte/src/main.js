@@ -33,7 +33,7 @@ const { tier, locked } = initialTier();
 const gl = createScene($('#gl'), tier);
 const DEBUG = new URLSearchParams(location.search).has('debug');
 if (DEBUG) window.__gl = gl; // ?debug expõe a cena no console
-const monitor = new QualityMonitor(tier, locked, (t) => gl.setTier(t));
+const monitor = new QualityMonitor(tier, locked, (p) => gl.setPixelRatio(p), () => gl.dropFeathers());
 setTask('scene', 1);
 
 // modelo real (se existir); senão fica o placeholder
@@ -135,17 +135,23 @@ if (DEBUG) window.__camPath = (ys, dt) => {
   [cur, vel] = keep; return out;
 };
 
-const root = document.documentElement;
+// Cores da página. Só grava quando o valor arredondado muda: gravar uma variável na raiz faz o navegador recalcular
+// o estilo da página inteira, e antes isso acontecia a cada quadro (com casas decimais que mudavam sempre).
+// As do brilho de fundo ficam no próprio elemento do brilho, para não mexer no resto.
+const root = document.documentElement, glowEl = $('.glow');
+const painted = {};
+const setVar = (el, k, v) => { if (painted[k] !== v) { painted[k] = v; el.style.setProperty(k, v); } };
 function paintGlow(s) {
   const rgb = (a) => a.map(Math.round).join(',');
-  root.style.setProperty('--bg', `rgb(${rgb(s.bg)})`);
-  root.style.setProperty('--bg-rgb', rgb(s.bg));
-  root.style.setProperty('--ink-rgb', rgb(s.ink));
-  root.style.setProperty('--acc-rgb', rgb(s.acc));
-  root.style.setProperty('--glow-c', s.glow.map(Math.round).join(','));
-  root.style.setProperty('--glow-a', s.glowA.toFixed(3));
-  root.style.setProperty('--glow-x', (gl.stacked ? 50 : s.glowX) + '%');
-  root.style.setProperty('--glow-y', (gl.stacked ? 28 : s.glowY) + '%');
+  setVar(root, '--bg', `rgb(${rgb(s.bg)})`);
+  setVar(root, '--bg-rgb', rgb(s.bg));
+  setVar(root, '--ink-rgb', rgb(s.ink));
+  setVar(root, '--acc-rgb', rgb(s.acc));
+  const g = glowEl || root;
+  setVar(g, '--glow-c', rgb(s.glow));
+  setVar(g, '--glow-a', (Math.round(s.glowA * 200) / 200).toFixed(3));
+  setVar(g, '--glow-x', (gl.stacked ? 50 : Math.round(s.glowX * 2) / 2) + '%');
+  setVar(g, '--glow-y', (gl.stacked ? 28 : Math.round(s.glowY * 2) / 2) + '%');
 }
 
 /* ---------- textos: revelação, contagem dos números e títulos por palavra ---------- */
@@ -231,8 +237,11 @@ function walkCommand(s, remaining) {
   return s.walk * go * go * (3 - 2 * go) * Math.min(2.4, 0.85 + loop.scrollV / 900);
 }
 
+// ?debug: tempo gasto em cada parte do quadro (ms), para achar o que trava
+const PROF = DEBUG ? (window.__prof = { on: false, rows: [] }) : null;
 function frame(now) {
   if (document.hidden) { loop.lastT = 0; return; }
+  const p0 = PROF && PROF.on ? performance.now() : 0;
   const dt = loop.lastT ? Math.min(0.05, (now - loop.lastT) / 1000) : 1 / 60;
   loop.lastT = now;
   const y = lenis ? lenis.scroll : scrollY;
@@ -242,7 +251,9 @@ function frame(now) {
   const target = stateAt(y);
   // a câmera "chega" sem trancos; o fator não depende da taxa de quadros. ?debug: sem atraso (testes em máquinas lentas)
   const s = follow(target, reduce || FROZEN ? 0 : dt);
+  const p1 = p0 && performance.now();
   paintGlow(s);
+  const p2 = p0 && performance.now();
   pointer.x += (pointer.tx - pointer.x) * (1 - Math.exp(-dt * 4)); pointer.y += (pointer.ty - pointer.y) * (1 - Math.exp(-dt * 4));
   const rig = gl.rig();
   const remaining = rig && intro.from !== null ? Math.max(0, intro.total - (rig.travel - intro.from)) : 0;
@@ -262,8 +273,12 @@ function frame(now) {
     }
   }
   // testes: window.__cam = { cam, look, fov, shift, rot, ... } troca o enquadramento (para olhar um detalhe de perto)
+  const p3 = p0 && performance.now();
   gl.apply(DEBUG && window.__cam ? { ...s, ...window.__cam } : s, time, step, m);
-  gl.render();
+  const p4 = p0 && performance.now();
+  // fora do quadro (a câmera pode passar por trás em alguma tela) não desenha: a animação segue, só o desenho pausa
+  if (gl.inView()) gl.render();
+  const p5 = p0 && performance.now();
   // anotações de anatomia: seguem o ponto do corpo e só aparecem no ato delas
   for (const c of callouts) {
     const a = c.act === activeAct ? gl.anchor(c.name, c.pos) : null;
@@ -276,14 +291,34 @@ function frame(now) {
     if (on !== c.on) { c.on = on; c.el.classList.toggle('is-on', on); }
   }
   monitor.tick(now);
+  if (p0) { const i = gl.renderer.info; PROF.rows.push({ y: Math.round(y), estado: p1 - p0, cores: p2 - p1, anim: p4 - p3, desenho: p5 - p4, resto: performance.now() - p5, chamadas: i.render.calls, tri: i.render.triangles, prog: i.programs.length }); }
   if (DEBUG && window.__onFrame) window.__onFrame(s);
 }
 
-function start() {
+// testes (?debug): simula a página rolando por uma lista de posições (um quadro a cada dt), com tudo o que mexe o dino
+// (câmera, pose por capítulo, caminhada), sem desenhar. Devolve, por quadro: posição na página, câmera, focinho na tela
+// e as medidas do corpo (rig.probe). Restaura o estado depois.
+if (DEBUG) window.__scrollSim = (ys, dt, t0 = 9000) => {
+  const keep = [cur, vel, { ...loop }]; cur = null; vel = null; loop.lastY = null; loop.scrollV = 0;
+  const rig = gl.rig(), nose = {}, rows = [];
+  ys.forEach((y, i) => {
+    const dy = loop.lastY === null ? 0 : Math.abs(y - loop.lastY); loop.lastY = y;
+    loop.scrollV += (Math.min(dy / dt, 6000) - loop.scrollV) * (1 - Math.exp(-dt * 9));
+    const s = follow(stateAt(y), dt);
+    gl.apply(s, (t0 + i * dt) * 1000, dt, { speed: walkCommand(s, 0), roar: s.roar, idle: 1, enter: 0, pointer: { x: 0, y: 0 }, snap: false });
+    gl.anchor('nose', nose);
+    rows.push({ ...rig.probe(), y, cam: gl.camera.position.toArray(), noseScr: [nose.x, nose.y] });
+  });
+  [cur, vel] = keep; Object.assign(loop, keep[2]); return rows;
+};
+
+async function start() {
   measure(); setupReveals();
   ScrollTrigger.addEventListener('refresh', measure);
   ScrollTrigger.refresh();
-  gl.warm();
+  // posiciona câmera e dino como no primeiro quadro e compila tudo enquanto o loading ainda cobre a tela
+  gl.apply(stateAt(scrollY), performance.now(), 0, { speed: 0, idle: loop.idle, enter: 0, snap: true });
+  await gl.warm();
   gsap.ticker.add((_, __, ___, ____) => frame(performance.now()));
   loader.done = true;
   loader.el.classList.add('is-done');
