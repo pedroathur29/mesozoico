@@ -62,6 +62,7 @@ function measure() {
     const el = secs[k.act - 1], top = el.offsetTop, h = el.offsetHeight - innerHeight;
     return { ...k, y: top + Math.max(0, h) * k.at };
   }).sort((a, b) => a.y - b.y);
+  buildSlopes();
 }
 // campos interpolados entre keyframes (ver src/acts.js)
 const VEC = ['cam', 'look', 'glow', 'bg', 'ink', 'acc'];
@@ -71,28 +72,68 @@ const NUM = ['rot', 'pitch', 'roll', 'shift', 'fov', 'glowA', 'glowX', 'glowY', 
 const lerp = (a, b, t) => a + (b - a) * t;
 const lerpArr = (a, b, t) => a.map((v, i) => lerp(v, b[i], t));
 const smooth = (t) => t * t * (3 - 2 * t);
+// Entre keyframes, cada valor segue uma curva que passa por todos eles sem quinas e sem parar em cada um (cúbica
+// monótona: não passa do ponto). Antes cada trecho começava e terminava parado, e a câmera "freava" a cada keyframe
+// no meio de uma rolagem contínua. Ela só para onde o movimento muda de sentido ou fica parado de propósito.
+let slopes = null;
+function buildSlopes() {
+  const n = stops.length, comp = (k) => (VEC.includes(k) ? stops[0][k].length : 1), val = (s, k, c) => (VEC.includes(k) ? s[k][c] : s[k]);
+  slopes = {};
+  for (const k of [...VEC, ...NUM]) {
+    if (THEME.includes(k)) continue;
+    slopes[k] = [];
+    for (let c = 0; c < comp(k); c++) {
+      const d = [], m = new Array(n).fill(0);
+      for (let i = 0; i < n - 1; i++) { const h = stops[i + 1].y - stops[i].y; d.push(h > 0 ? (val(stops[i + 1], k, c) - val(stops[i], k, c)) / h : 0); }
+      for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] > 0 ? (3 * (stops[i + 1].y - stops[i - 1].y)) / ((2 * stops[i + 1].y - stops[i].y - stops[i - 1].y) / d[i - 1] + (stops[i + 1].y + stops[i].y - 2 * stops[i - 1].y) / d[i]) : 0;
+      slopes[k].push(m);
+    }
+  }
+}
+function hermite(a, b, ma, mb, h, u) {
+  const u2 = u * u, u3 = u2 * u;
+  return (2 * u3 - 3 * u2 + 1) * a + (u3 - 2 * u2 + u) * h * ma + (-2 * u3 + 3 * u2) * b + (u3 - u2) * h * mb;
+}
 function stateAt(y) {
   if (y <= stops[0].y) return stops[0];
   const last = stops[stops.length - 1];
   if (y >= last.y) return last;
-  let i = 0; while (stops[i + 1].y < y) i++;
-  const A = stops[i], B = stops[i + 1];
-  const t = smooth((y - A.y) / (B.y - A.y));
+  let i = 0; while (stops[i + 1].y <= y) i++;
+  const A = stops[i], B = stops[i + 1], h = B.y - A.y;
+  const r = h > 0 ? (y - A.y) / h : 1;
   const o = {};
-  const r = (y - A.y) / (B.y - A.y);
-  for (const k of VEC) o[k] = lerpArr(A[k], B[k], THEME.includes(k) ? sharp(r) : t);
-  for (const k of NUM) o[k] = lerp(A[k], B[k], t);
+  for (const k of VEC) {
+    o[k] = THEME.includes(k) ? lerpArr(A[k], B[k], sharp(r)) : A[k].map((a, c) => hermite(a, B[k][c], slopes[k][c][i], slopes[k][c][i + 1], h, r));
+  }
+  for (const k of NUM) o[k] = hermite(A[k], B[k], slopes[k][0][i], slopes[k][0][i + 1], h, r);
   return o;
 }
 
-// suaviza o estado para a câmera "chegar" sem trancos
-let cur = null;
-function follow(target, k) {
-  if (!cur) return (cur = JSON.parse(JSON.stringify(target)));
-  for (const key of VEC) cur[key] = lerpArr(cur[key], target[key], k);
-  for (const key of NUM) cur[key] = lerp(cur[key], target[key], k);
+// Suaviza o estado para a câmera "chegar" sem trancos: uma mola amortecida (sem passar do ponto). Diferente do filtro
+// simples de antes, ela também suaviza a aceleração: a câmera não arranca nem para de uma vez quando a rolagem começa
+// ou termina. dt = 0: copia o alvo (movimento reduzido e capturas de teste).
+let cur = null, vel = null;
+const W = 8.5;
+function follow(target, dt) {
+  if (!cur) { cur = JSON.parse(JSON.stringify(target)); vel = {}; }
+  const n = Math.max(1, Math.ceil(dt * 120)), h = dt / n;
+  const step = (key, c, x, tgt) => {
+    if (!dt) { vel[key + c] = 0; return tgt; }
+    let v = vel[key + c] || 0;
+    for (let i = 0; i < n; i++) { v += (W * W * (tgt - x) - 2 * W * v) * h; x += v * h; }
+    vel[key + c] = v; return x;
+  };
+  for (const key of VEC) cur[key] = cur[key].map((x, c) => step(key, c, x, target[key][c]));
+  for (const key of NUM) cur[key] = step(key, 0, cur[key], target[key]);
   return cur;
 }
+
+// testes (?debug): percorre uma rolagem sintética (lista de posições, um quadro a cada dt) e devolve a câmera de cada quadro
+if (DEBUG) window.__camPath = (ys, dt) => {
+  const keep = [cur, vel]; cur = null; vel = null;
+  const out = ys.map((y) => { const s = follow(stateAt(y), dt); return [...s.cam, ...s.look, s.rot, s.shift, s.fov]; });
+  [cur, vel] = keep; return out;
+};
 
 const root = document.documentElement;
 function paintGlow(s) {
@@ -185,8 +226,9 @@ function playIntro() {
 function walkCommand(s, remaining) {
   if (reduce) return 0;
   if (remaining > 0) return Math.min(1.6, Math.sqrt(2 * 1.2 * remaining) + 0.25);     // entrada: passo calmo, freia para parar no ponto
-  if (loop.scrollV < 45) return 0;
-  return s.walk * Math.min(2.4, 0.85 + loop.scrollV / 900);
+  // sem degrau: a vontade de andar cresce aos poucos com a velocidade da rolagem (antes ligava de uma vez em 45 px/s)
+  const go = Math.min(1, Math.max(0, (loop.scrollV - 20) / 110));
+  return s.walk * go * go * (3 - 2 * go) * Math.min(2.4, 0.85 + loop.scrollV / 900);
 }
 
 function frame(now) {
@@ -199,7 +241,7 @@ function frame(now) {
   loop.scrollV += (Math.min(dy / dt, 6000) - loop.scrollV) * (1 - Math.exp(-dt * 9));
   const target = stateAt(y);
   // a câmera "chega" sem trancos; o fator não depende da taxa de quadros. ?debug: sem atraso (testes em máquinas lentas)
-  const s = follow(target, reduce || FROZEN ? 1 : 1 - Math.exp(-dt * 8.5));
+  const s = follow(target, reduce || FROZEN ? 0 : dt);
   paintGlow(s);
   pointer.x += (pointer.tx - pointer.x) * (1 - Math.exp(-dt * 4)); pointer.y += (pointer.ty - pointer.y) * (1 - Math.exp(-dt * 4));
   const rig = gl.rig();

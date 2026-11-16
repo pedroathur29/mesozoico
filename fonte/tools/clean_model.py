@@ -1,4 +1,4 @@
-"""Prepara o modelo do Yutyrannus para o site (rodar com o Blender como módulo Python: pip install bpy pillow).
+"""Prepara o modelo do Yutyrannus para o site (rodar com o Blender como módulo Python: pip install bpy pillow scipy).
 
 Uso: python tools/clean_model.py -- entrada.glb saida.glb [tex=1024] [trim=0.5] [white=1] [bulk=1] [plume=1] [flow=1] [pattern=1]
 
@@ -14,7 +14,8 @@ O que faz, nesta ordem:
      e uma crina na nuca (cartões duplicados, alongados e penteados para trás);
   5. troca a textura da plumagem por um desenho próprio de FILAMENTOS SIMPLES (fios sem ramificação), gerado
      aqui por código. A textura original mostrava penas com raque e barbas, o que contradiz o texto do site;
-  6. white: clareia a textura de cor do corpo. Áreas coloridas (olho, boca, língua) ficam como estão;
+  6. white: clareia a textura de cor do corpo. Áreas coloridas (olho, boca, língua) ficam como estão, menos a
+     mancha marrom atrás do olho (o ouvido do modelo de origem), que é apagada antes;
   7. pattern: pinta um padrão de plumagem, desenho próprio (a cor real do animal é desconhecida): listras
      escuras inclinadas do dorso para os flancos, anéis na cauda, penacho creme, máscara escura no focinho e
      em volta do olho, crista ferrugem, "meias" escuras nas pernas e nas mãos. No corpo o padrão vai para a
@@ -487,6 +488,74 @@ px = np.empty(H * W * 4, np.float32)
 bimg.pixels.foreach_get(px)
 px = px.reshape(H, W, 4)
 rgb = px[:, :, :3]
+
+
+def fix_ear_spot():
+    """Apaga a mancha marrom atrás do olho (no jogo de origem era a abertura do ouvido). Ela é colorida, então a
+    proteção de cores abaixo a mantinha intacta e ela aparecia como um ponto escuro no meio da cabeça branca.
+    Os dois lados do rosto usam o mesmo pedaço da textura. A área é preenchida a partir da borda (interpolação
+    suave) e recebe de volta o grão da pele tirado de uma área vizinha, para não virar um borrão liso."""
+    eye = bone_head(r'^l_Eye_')
+    eye[0] = abs(eye[0])
+    uvs = np.empty(len(body.data.loops) * 2)
+    body.data.uv_layers[0].data.foreach_get('uv', uvs)
+    uvs = uvs.reshape(-1, 3, 2)
+    region = np.zeros((H, W), bool)
+    for ti in np.where(main[btris[:, 0]])[0]:
+        v = btris[ti]
+        c = bco[v].mean(0)
+        d = np.array([abs(c[0]) - eye[0], c[1] - eye[1], c[2] - eye[2]])
+        if BR['head'][v].mean() < 0.4 or abs(c[0]) < 0.05 * M or not (0.02 * M < d[1] < 0.4 * M) or abs(d[2]) > 0.14 * M:
+            continue
+        q = (uvs[ti] % 1) * [W, H]
+        lo, hi = np.floor(q.min(0)).astype(int), np.ceil(q.max(0)).astype(int)
+        region[max(0, lo[1]):hi[1] + 1, max(0, lo[0]):hi[0] + 1] = True
+    mxs, mns = rgb.max(2), rgb.min(2)
+    sat = (mxs - mns) / np.maximum(mxs, 1e-4)
+    warm = (rgb[:, :, 0] - rgb[:, :, 2]) > 0.06
+    spot = region & (sat > 0.2) & warm
+    if spot.sum() < 20:
+        print('mancha atras do olho: nao encontrada')
+        return
+    # só o maior pedaço contínuo (a mancha), e uma margem de 3 texels para pegar a borda escurecida
+    from scipy import ndimage
+    lab, nlab = ndimage.label(spot)
+    spot = lab == (np.bincount(lab.ravel())[1:].argmax() + 1)
+    # a sombra pintada logo abaixo da abertura (cinza, mais escura que a pele em volta) sai junto
+    lum = rgb.mean(2)
+    shade = (lum < ndimage.median_filter(lum, size=15) - 0.06) & ndimage.binary_dilation(spot, iterations=10)
+    lab2, _ = ndimage.label(shade | ndimage.binary_dilation(spot, iterations=2))
+    keep_lab = np.unique(lab2[spot])
+    spot = np.isin(lab2, keep_lab[keep_lab > 0])
+    hole = ndimage.binary_dilation(spot, iterations=3)
+    ys, xs = np.where(hole)
+    y0, y1, x0, x1 = ys.min() - 8, ys.max() + 9, xs.min() - 8, xs.max() + 9
+    sub = rgb[y0:y1, x0:x1].copy()
+    m = hole[y0:y1, x0:x1]
+    # 1) preenchimento suave a partir da borda (difusão)
+    fill = sub.copy()
+    fill[m] = sub[~m].mean(0)
+    for _ in range(600):
+        avg = 0.25 * (np.roll(fill, 1, 0) + np.roll(fill, -1, 0) + np.roll(fill, 1, 1) + np.roll(fill, -1, 1))
+        fill[m] = avg[m]
+    # 2) grão da pele: a parte fina (pele menos a pele borrada) de uma área vizinha do mesmo tamanho, sem a mancha
+    hh, ww = y1 - y0, x1 - x0
+    for oy, ox in ((0, ww), (0, -ww), (hh, 0), (-hh, 0)):
+        if y0 + oy >= 0 and x0 + ox >= 0 and y1 + oy <= H and x1 + ox <= W and not hole[y0 + oy:y1 + oy, x0 + ox:x1 + ox].any():
+            donor = rgb[y0 + oy:y1 + oy, x0 + ox:x1 + ox]
+            break
+    else:
+        donor = None
+    if donor is not None:
+        fill[m] += (donor - ndimage.uniform_filter(donor, size=(7, 7, 1)))[m]
+    # 3) mistura com borda suave, para a costura não aparecer
+    w = ndimage.gaussian_filter(m.astype(np.float32), 1.2)[:, :, None]
+    w = np.maximum(w, m[:, :, None])
+    rgb[y0:y1, x0:x1] = np.clip(sub * (1 - w) + fill * w, 0, 1)
+    print(f'mancha atras do olho: {int(spot.sum())} texels ({int(hole.sum())} com a margem), preenchida; grao copiado {"sim" if donor is not None else "nao"}')
+
+
+fix_ear_spot()
 mx, mn = rgb.max(2, keepdims=True), rgb.min(2, keepdims=True)
 keep = np.clip(((mx - mn) / np.maximum(mx, 1e-4) - 0.16) / 0.22, 0, 1)     # pixels saturados (olho, boca) ficam como estão
 keep = keep * keep * (3 - 2 * keep)

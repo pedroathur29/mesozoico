@@ -42,7 +42,7 @@ def pp(x):
 def series(rows):
     P = lambda k: np.array([r[k] for r in rows], float)
     s = dict(t=col(rows, lambda r: r['t']), v=col(rows, lambda r: r['v']), travel=col(rows, lambda r: r['travel']),
-             hip=P('hip'), chest=P('chest'), head=P('head'), nose=P('nose'), tailMid=P('tailMid'), tailTip=P('tailTip'),
+             hip=P('hip'), chest=P('chest'), head=P('head'), nose=P('nose'), tailBase=P('tailBase') if 'tailBase' in rows[0] else P('tailMid'), tailMid=P('tailMid'), tailTip=P('tailTip'),
              hipYaw=col(rows, lambda r: r['hipYaw']), jaw=col(rows, lambda r: r['jaw']), breath=col(rows, lambda r: r['breath']))
     s['chestYaw'] = heading(s['hip'], s['chest'])
     s['headYaw'] = heading(s['head'], s['nose'])
@@ -89,9 +89,13 @@ out['caminhada'] = {
     'velocidade vertical do pé ao pousar (m/s), média': round(float(np.mean([vy for t, _, vy in lands if 3.5 < t < 10.5])), 2),
     'velocidade do pé contra o chão ao sair (m/s), pior caso': round(max(abs(v) for t, v in lifts if t > 2), 3),
     'pé plantado se move (mm), pior caso': round(max(drift) * 1000, 2),
-    'sobe e desce (cm): quadril, cabeça, ponta da cauda': [round(pp(W[k][steady, 1]) * 100, 1) for k in ('hip', 'head', 'tailTip')],
+    'sobe e desce (cm): quadril, cabeça, focinho, ponta da cauda': [round(pp(W[k][steady, 1]) * 100, 1) for k in ('hip', 'head', 'nose', 'tailTip')],
     'vai e vem lateral (cm): quadril, focinho, ponta da cauda': [round(pp(W[k][steady, 2]) * 100, 1) for k in ('hip', 'nose', 'tailTip')],
+    'cauda, vai e vem lateral (cm): base, meio, ponta': [round(pp(W[k][steady, 2]) * 100, 1) for k in ('tailBase', 'tailMid', 'tailTip')],
+    'cauda, sobe e desce (cm): base, meio, ponta': [round(pp(W[k][steady, 1]) * 100, 1) for k in ('tailBase', 'tailMid', 'tailTip')],
+    'ponta da cauda: velocidade lateral máx (m/s), andando e na parada': [round(float(np.abs(np.diff(W['tailTip'][:, 2]))[steady[1:]].max() * FPS), 2), round(float(np.abs(np.diff(W['tailTip'][:, 2]))[(W['t'][1:] > 10.5)].max() * FPS), 2)],
     'giro (graus): quadril, tronco, cabeça': [round(np.degrees(pp(W[k][steady])), 1) for k in ('hipYaw', 'chestYaw', 'headYaw')],
+    'giro do peito em relação ao quadril (graus)': round(np.degrees(pp((W['chestYaw'] - W['hipYaw'])[steady])), 1),
     'atraso em relação ao giro do quadril (ms, correlação)': {
         'tronco': lag_ms(W['hipYaw'][steady], W['chestYaw'][steady]), 'cabeça': lag_ms(W['hipYaw'][steady], W['headYaw'][steady]),
         'meio da cauda (lateral)': lag_ms(W['hipYaw'][steady], W['tailMid'][steady, 2]), 'ponta da cauda (lateral)': lag_ms(W['hipYaw'][steady], W['tailTip'][steady, 2])},

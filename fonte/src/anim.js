@@ -54,7 +54,9 @@ const bump = (u, c, w) => Math.exp(-(((u - c) / w) ** 2));
 const lag = (cur, target, tau, dt) => cur + (target - cur) * (1 - Math.exp(-dt / tau));
 // quanto a cauda responde ao quadril (de lado e para cima e para baixo). Ajustado por medição (tools/check/tracos.py)
 // para a ponta balançar uns 40 cm de lado e uns 20 cm na vertical ao andar; valores maiores viram pêndulo ou chicote.
-const TAIL_Y = 0.62, TAIL_P = 0.62;
+// Cauda: quanto do vai e vem da base chega a cada articulação (da base para a ponta). O movimento começa na base,
+// que acompanha a pelve, e diminui até a ponta; cada trecho chega um pouco depois do anterior.
+const TAIL_W = [1, 0.86, 0.72, 0.6, 0.5, 0.42, 0.36], TAIL_LAG = [0, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1];
 // sacadas dos olhos: o alvo muda de repente (em ~0,1 s) e fica; em parte dos intervalos ele não muda
 function sacc(t, period, seed) {
   const k = Math.floor(t / period), u = t - k * period;
@@ -146,6 +148,13 @@ export function createRig(wrap) {
   const morph = (n, v) => { const list = morphs[n]; if (list) for (const [m, i] of list) m.morphTargetInfluences[i] = v; };
   // posição da cabeça em repouso, no espaço do dino (para calcular para onde olhar)
   const headPos = new THREE.Vector3(3.6, 2.7, 0);
+  // geometria da cauda em repouso: onde fica cada articulação ao longo do corpo (m) e a distância até a pelve
+  const tailX = J.tail.map((j) => (j ? dinoPos(j.bone).x : 0));
+  tailX.push(tailX[5] - (tailX[4] - tailX[5]));                   // a ponta, um trecho depois da última articulação
+  const tailLen = tailX.slice(0, 6).map((x, i) => Math.max(0.3, x - tailX[i + 1]));
+  const tailArm = J.hip ? dinoPos(J.hip.bone).x - tailX[0] : 0.4;
+  // distância da base do pescoço à articulação da cabeça (m): quanto o pescoço precisa girar para a cabeça andar 1 m
+  const NECK_ARM = J.neck1 && J.head ? Math.max(0.5, dinoPos(J.head.bone).x - dinoPos(J.neck1.bone).x) : 1;
   if (J.head) dinoPos(J.head.bone, headPos);
 
   function rot(j, rx, ry, rz) {
@@ -192,7 +201,7 @@ export function createRig(wrap) {
   }
 
   // ---------- controlador de passada ----------
-  const G = { travel: 0, v: 0, lastSide: 1, stillT: 0, stepSlot: -1, feet: [], land: 9, n: 0, acc: 0 };   // land: s desde o último pouso; n: passos dados; acc: aceleração suavizada
+  const G = { travel: 0, v: 0, a: 0, lastSide: 1, stillT: 0, stepSlot: -1, feet: [], land: 9, n: 0, acc: 0 };   // land: s desde o último pouso; n: passos dados; acc: aceleração suavizada
   // cada passo sai um pouco diferente do anterior (comprimento, altura, tempo e onde o pé pisa de lado)
   const vary = (k) => hash(G.n * 3.71 + k * 11.3) * 2 - 1;
   if (hasLegs) G.feet = legs.map((L) => ({ L, planted: true, gx: L.home.x, x: L.home.x, y: L.home.y, z: L.home.z, h: 0, p: 0, x0: 0, z0: 0, tz: L.home.z, T: 0.5, lift: 0.2, txr: 0, dm: 0, dm0: 0, toe: 0, toe0: 0, since: 9, load: 0, walkStep: false }));
@@ -206,14 +215,27 @@ export function createRig(wrap) {
 
   function stepGait(dt, vCmd) {
     if (!hasLegs || dt <= 0) return;
-    const acc = vCmd > G.v ? 1.7 : 2.8;                       // acelera e freia aos poucos (m/s²)
+    // Velocidade sem trancos: a aceleração também muda aos poucos (antes ligava e desligava de uma vez).
+    // Ele não acelera além do que a perna de apoio aguenta até o outro pé pousar: assim o corpo nunca precisa
+    // parar de repente no meio do passo, que era o "travamento" visível.
+    let cap = Infinity;
+    const airF = G.feet.find((f) => !f.planted);
+    for (const f of G.feet) {
+      if (!f.planted) continue;
+      const m = f.gx - G.travel - f.L.home.x - REACH_BACK;
+      const left = airF ? (1 - airF.p) * airF.T : 0.32;            // até o outro pé pousar (ou o tempo de um passo)
+      cap = Math.min(cap, Math.max(0, m) / Math.max(left, 0.06) * 0.9);
+    }
+    const vTarget = Math.min(vCmd, cap);
+    const aWant = clamp((vTarget - G.v) * 2.6, -2.6, 1.6);
+    G.a = lag(G.a, aWant, vTarget < G.v - 0.05 && vTarget < cap - 0.01 ? 0.16 : 0.12, dt);
     const v0 = G.v;
-    G.v += clamp(vCmd - G.v, -acc * dt, acc * dt);
-    if (vCmd === 0 && G.v < 0.03) G.v = 0;
+    G.v = Math.max(0, G.v + G.a * dt);
+    if (vCmd === 0 && G.v < 0.02 && Math.abs(G.a) < 0.05) { G.v = 0; G.a = 0; }
     // o corpo não passa do alcance da perna de apoio: se o pé de trás chegou ao limite, espera o outro pousar
     let ds = G.v * dt;
     for (const f of G.feet) if (f.planted) ds = Math.min(ds, Math.max(0, f.gx - G.travel - f.L.home.x - REACH_BACK));
-    if (ds < G.v * dt) G.v = ds / dt;
+    if (ds < G.v * dt) { G.v = ds / dt; G.a = Math.min(G.a, 0); }   // último recurso (não deve acontecer andando)
     G.travel += ds;
     G.acc = lag(G.acc, (G.v - v0) / dt, 0.22, dt);
     const moving = G.v > 0.06;
@@ -228,7 +250,7 @@ export function createRig(wrap) {
         const xr = f.gx - G.travel - f.L.home.x;
         const other = G.feet.find((o) => o !== f), gap = Math.abs((other.gx - G.travel - other.L.home.x) - xr);
         // andando: levanta o pé que ficou para trás (ou, na partida, com os pés lado a lado, dá logo o primeiro passo)
-        const want = moving ? (xr <= STANCE_SHIFT - A * (1 + 0.08 * vary(1)) || (xr <= -0.1 && gap < 0.25)) : (G.stillT > 0.7 && (xr < -0.34 || xr > 0.42 || Math.abs(f.z - f.L.home.z) > 0.1));
+        const want = moving ? (xr <= STANCE_SHIFT - A * (1 + 0.08 * vary(1)) || (xr <= -0.1 && gap < 0.25) || xr - REACH_BACK < G.v * 0.17) : (G.stillT > 0.7 && (xr < -0.34 || xr > 0.42 || Math.abs(f.z - f.L.home.z) > 0.1));
         if (want && (!pick || xr < pick.xr)) pick = { f, xr };
       }
       if (pick) {
@@ -249,7 +271,13 @@ export function createRig(wrap) {
         f.toe = f.toe0 * Math.exp(-f.since / 0.06);          // os dedos chegam um pouco erguidos e assentam logo depois do contato
       } else {
         // se o corpo acelerou depois que o pé saiu do chão, o passo também acelera
-        const T = f.walkStep ? clamp((1 - DUTY) * strideLength(G.v) / Math.max(G.v, 0.55), 0.3, f.T) : f.T;
+        let T = f.walkStep ? clamp((1 - DUTY) * strideLength(G.v) / Math.max(G.v, 0.55), 0.3, f.T) : f.T;
+        const other = G.feet.find((o) => o !== f && o.planted);
+        if (other && G.v > 0.1) {
+          const m = Math.max(0.02, other.gx - G.travel - other.L.home.x - REACH_BACK);
+          T = Math.min(T, Math.max(0.24, f.p * T + 0.85 * m / G.v * (1 - f.p) / Math.max(1 - f.p, 1e-3)));
+        }
+        f.T = f.walkStep ? T : f.T;
         const left = (1 - f.p) * T;                       // tempo que falta para o pé tocar o chão
         f.p = Math.min(1, f.p + dt / T);
         const q = f.p, q2 = q * q, q3 = q2 * q;
@@ -279,10 +307,10 @@ export function createRig(wrap) {
   const S = {
     py: 0, pyV: 0, pz: 0, pzV: 0, yaw: 0, yawV: 0, roll: 0, rollV: 0, pitch: 0, pitchV: 0,   // quadril (molas)
     lagY: 0, lagYaw: 0, lagZ: 0, armY: 0,                                                    // versões atrasadas do quadril
-    cy: [0, 0, 0, 0, 0, 0, 0], cp: [0, 0, 0, 0, 0, 0, 0],                                    // cadeia de atraso da cauda
     fy: [0, 0, 0, 0, 0, 0], fr: [0, 0, 0, 0, 0, 0], fp: [0, 0, 0, 0, 0, 0],                  // cadeias de atraso do tronco à cabeça (giro, rolagem, inclinação)
+    tz: [0, 0, 0, 0, 0, 0, 0], ty: [0, 0, 0, 0, 0, 0, 0],                                    // cauda: deslocamento atrasado de cada articulação (lado, altura)
     gazeY: 0, gazeP: 0, gate: 0, actK: null,
-    bph: 0, effort: 0, ti: 0, tj: 0, rest: 0,                                                                       // respiração: fase (ciclos) e esforço recente
+    bph: 0, effort: 0, ti: 0, tj: 0, rest: 0, nz: 0, ny: 0,                                                                       // respiração: fase (ciclos) e esforço recente
   };
   // z < 1: a mola passa um pouco do alvo e assenta (é o que dá a sensação de massa); z = 1: chega sem passar
   function spring(key, target, w, dt, z = 1) {
@@ -494,16 +522,20 @@ export function createRig(wrap) {
     if (dt > 0) {
       S.lagY = lag(S.lagY, S.py, 0.2, dt); S.lagYaw = lag(S.lagYaw, S.yaw, 0.22, dt); S.lagZ = lag(S.lagZ, S.pz, 0.28, dt);
       S.armY = lag(S.armY, S.py, 0.11, dt);
-      S.cy[0] = S.yaw + S.pz * 0.5; S.cp[0] = pitchDyn - S.py * 0.5;
-      for (let i = 1; i < 7; i++) { const tau = 0.07 + 0.035 * i; S.cy[i] = lag(S.cy[i], S.cy[i - 1], tau, dt); S.cp[i] = lag(S.cp[i], S.cp[i - 1], tau, dt); }
       S.fy[0] = S.yaw; S.fr[0] = S.roll; S.fp[0] = pitchDyn;
       for (let i = 1; i < 6; i++) { const tau = 0.05 + 0.012 * i; S.fy[i] = lag(S.fy[i], S.fy[i - 1], tau, dt); S.fr[i] = lag(S.fr[i], S.fr[i - 1], tau, dt); S.fp[i] = lag(S.fp[i], S.fp[i - 1], tau, dt); }
     } else if (o.snap) { for (let i = 0; i < 6; i++) { S.fy[i] = S.yaw; S.fr[i] = S.roll; S.fp[i] = pitchDyn; } }
     // quanto de cada giro do quadril chega a: tronco 1, tronco 2, base do pescoço, meio do pescoço, cabeça
-    const KY = [1, 0.5, 0.26, 0.18, 0.2, 0.24], KR = [1, 0.55, 0.3, 0.15, 0.08, 0.03], KP = [1, 0.55, 0.28, 0.14, 0.06, 0];
+    // O peito gira um pouco ao contrário do quadril (compensa); pescoço e cabeça ficam quase parados no espaço.
+    // Assim o corpo não balança como uma peça só.
+    const KY = [1, 0.32, -0.14, -0.05, 0, 0], KR = [1, 0.4, -0.08, 0, 0, 0], KP = [1, 0.45, 0.12, 0.02, 0, 0];
     const cY = (i) => KY[i] * S.fy[i] - KY[i - 1] * S.fy[i - 1], cR = (i) => KR[i] * S.fr[i] - KR[i - 1] * S.fr[i - 1], cP = (i) => KP[i] * S.fp[i] - KP[i - 1] * S.fp[i - 1];
     // a cabeça segura a altura e a posição de lado: o pescoço compensa o sobe e desce e o vai e vem do quadril, com atraso
     const holdY = clamp((S.lagY - S.py) * 1.9, -0.12, 0.12), holdZ = clamp((S.pz - S.lagZ) * 0.5, -0.06, 0.06);
+    // o pescoço também desfaz boa parte do vai e vem e do sobe e desce do corpo, com atraso, para a cabeça ficar mais
+    // parada no espaço (o olhar fica estável). Parado, menos: ali o peso passando de uma perna para a outra é intencional.
+    if (dt > 0) { S.nz = lag(S.nz, S.pz, 0.06, dt); S.ny = lag(S.ny, S.py, 0.05, dt); } else if (o.snap) { S.nz = S.pz; S.ny = S.py; }
+    const steadyZ = S.nz * (0.35 + 0.75 * wk) / NECK_ARM, steadyY = S.ny * (0.25 + 0.95 * wk) / NECK_ARM;
 
     // ---------- tronco ----------
     const und = 0.024 * wob(ti * 0.5, 11) * still;
@@ -532,12 +564,12 @@ export function createRig(wrap) {
 
     // ---------- pescoço e cabeça ----------
     // o balanço lento do pescoço vem em fases: um tempo mexendo, um tempo parado
-    const nod = 0.032 * wob(ti * 0.6, 2) * idle + 0.008 * breath;
+    const nod = 0.032 * wob(ti * 0.6, 2) * idle * rest + 0.008 * breath * (0.3 + 0.7 * rest);   // o aceno lento é do repouso: andando, a cabeça fica firme
     const snf = snK * 0.016 * (snPulse - 0.3);
-    rot(J.neck1, rufB * 0.04 + cR(3), gy * 0.22 + cY(3) + holdZ * 0.55, nod + gp * 0.3 + 0.13 * r - 0.46 * A.down + cP(3) + holdY * 0.55);
-    rot(J.neck2, rufC * 0.05 + cR(4), gy * 0.26 + cY(4) + holdZ * 0.45, nod * 0.6 + gp * 0.3 + 0.12 * r - 0.44 * A.down + cP(4) + holdY * 0.45);
+    rot(J.neck1, rufB * 0.04 + cR(3), gy * 0.22 + cY(3) + holdZ * 0.55 + steadyZ * 0.55, nod + gp * 0.3 + 0.13 * r - 0.46 * A.down + cP(3) + holdY * 0.55 - steadyY * 0.55);
+    rot(J.neck2, rufC * 0.05 + cR(4), gy * 0.26 + cY(4) + holdZ * 0.45 + steadyZ * 0.45, nod * 0.6 + gp * 0.3 + 0.12 * r - 0.44 * A.down + cP(4) + holdY * 0.45 - steadyY * 0.45);
     rot(J.neckTop, dTilt * 0.3 + A.tilt * 0.4, gy * 0.2 + dYaw * 0.3, gp * 0.15 + 0.05 * r + dPitch * 0.4 - 0.2 * A.down);
-    rot(J.head, dTilt + A.tilt + growl * 0.014 + rufC * 0.07 + cR(5), gy * 0.32 + dYaw + growl * 0.012 + cY(5) - holdZ, gp * 0.25 + dPitch + 0.1 * r + growl * 0.006 + snf - 0.06 * A.down - pitchAct * 0.5 + cP(5) - holdY);
+    rot(J.head, dTilt + A.tilt + growl * 0.014 + rufC * 0.07 + cR(5), gy * 0.32 + dYaw + growl * 0.012 + cY(5) - holdZ - steadyZ, gp * 0.25 + dPitch + 0.1 * r + growl * 0.006 + snf - 0.06 * A.down - pitchAct * 0.5 + cP(5) - holdY + steadyY);
     // no ato 3 (fareja a pessoa) a boca entreabre por um instante a cada poucos segundos
     const sniffPart = sniff * idle * 0.15 * pulse(((t + 2) % 6.3) / 1.0, 0.3, 0.6) * (((t + 2) % 6.3) < 1.0 ? 1 : 0);
     const jawOpen = clamp(r + Math.max(A.jaw, sniffPart) * (1 - r), 0, 1);
@@ -554,17 +586,29 @@ export function createRig(wrap) {
     const eF = clamp(0.55 * sacc(t, 1.7, 51) * quiet + A.eye + S.gazeY * 0.3, -1, 1), eU = 0.45 * sacc(t, 2.3, 57) * quiet + S.gazeP * 0.4;
     for (const E of eyes) rot(E.j, -E.side * eU * 0.1, eF * 0.16, 0);
 
-    // ---------- cauda: contrapeso do quadril, com atraso que cresce até a ponta ----------
-    // parado, a cauda assume uma curva suave para um lado, fica, e de tempos em tempos muda; por cima disso vem um
-    // balanço lento que aparece e some (fases), em vez de um vai e vem sem fim
-    const curl = 0.08 * drift(tj, 6.9, 23, 2.6) * rest;
+    // ---------- cauda ----------
+    // A base da cauda vai junto com a pelve (deslocamento de lado e de altura, e o giro dela). Cada articulação
+    // seguinte recebe esse vai e vem um pouco depois e um pouco menor (TAIL_W, TAIL_LAG): o movimento começa na base
+    // e diminui até a ponta. Os ângulos saem das posições desejadas, então a ponta nunca passa do ponto (sem chicote).
+    const baseZ = S.pz + tailArm * S.yaw, baseY = S.py - tailArm * S.pitch;
+    if (dt > 0) {
+      S.tz[0] = baseZ; S.ty[0] = baseY;
+      for (let i = 1; i < 7; i++) { S.tz[i] = lag(S.tz[i], S.tz[i - 1], TAIL_LAG[i], dt); S.ty[i] = lag(S.ty[i], S.ty[i - 1], TAIL_LAG[i], dt); }
+    } else if (o.snap) for (let i = 0; i < 7; i++) { S.tz[i] = baseZ; S.ty[i] = baseY; }
+    const DZ = (i) => (i ? TAIL_W[i] * S.tz[i] : baseZ), DY = (i) => (i ? TAIL_W[i] * S.ty[i] : baseY);
+    // parado, a cauda assume uma curva suave para um lado, fica e de tempos em tempos muda; por cima, um balanço lento
+    // que aparece e some. Também aqui o movimento é maior na base e menor na ponta.
+    const curl = 0.075 * drift(tj, 6.9, 23, 2.6) * rest;
+    let prevYaw = S.yaw, prevPitch = S.pitch;
     J.tail.forEach((j, i) => {
-      // a base da cauda desfaz boa parte do giro do quadril: ela fica na linha do corpo (contrapeso), em vez de varrer como um pêndulo
-      const follow = -TAIL_Y * (S.cy[i] - S.cy[i + 1]) - (i === 0 ? S.yaw * 0.42 : i === 1 ? S.yaw * 0.26 : 0);
-      const slow = idle * (0.09 * wob(tj * 0.68 - i * 0.5, 31) + 0.04 * wob(tj * 0.31 - i * 0.3, 37)) * (0.4 + 0.6 * rest);
-      const sw = follow + slow + curl + ruf * 0.035 * Math.sin(t * 19 - 1.5 - i * 0.8) + A.swish * 0.13 * Math.sin(t * 4.2 - i * 0.85);
-      const up = TAIL_P * (S.cp[i] - S.cp[i + 1]) + idle * 0.02 * wob(tj * 0.55 - i * 0.4, 43) + 0.014 * drift(tj, 8.7, 47, 2.6) * rest - 0.03 * r + 0.012 * sniff + 0.01 * A.swish + 0.012 * wk + 0.036 * A.down;   // ao baixar a cabeça a cauda não sobe junto: fica quase nivelada
+      const segYaw = Math.atan2(DZ(i + 1) - DZ(i), tailLen[i]), segPitch = -Math.atan2(DY(i + 1) - DY(i), tailLen[i]);
+      const fall = 1 - 0.13 * i;                                                  // 1 na base, 0,35 na última
+      const slow = idle * (0.085 * wob(tj * 0.62 - i * 0.32, 31) + 0.035 * wob(tj * 0.29 - i * 0.2, 37)) * (0.08 + 0.92 * rest) * fall;
+      const sw = (segYaw - prevYaw) + slow + curl * fall + ruf * 0.035 * Math.sin(t * 19 - 1.5 - i * 0.8) * fall + A.swish * 0.15 * Math.sin(t * 4.2 - i * 0.45) * fall;
+      const up = (segPitch - prevPitch) + idle * 0.018 * wob(tj * 0.55 - i * 0.3, 43) * fall * (0.1 + 0.9 * rest) + 0.014 * drift(tj, 8.7, 47, 2.6) * rest * fall
+        - 0.03 * r + 0.012 * sniff + 0.01 * A.swish + 0.012 * wk + 0.036 * A.down;   // ao baixar a cabeça a cauda não sobe junto: fica quase nivelada
       rot(j, i === 0 ? -S.roll * 0.6 : 0, sw, up);      // a base da cauda desfaz parte da inclinação do quadril
+      prevYaw = segYaw; prevPitch = segPitch;
     });
 
     // ---------- braços e mãos ----------
@@ -618,7 +662,7 @@ export function createRig(wrap) {
     return {
       v: G.v, travel: G.travel, hipYaw: S.yaw, hipRoll: S.roll, hipPitch: S.pitch, jaw: S.jawOut || 0, breath: S.breathOut || 0,
       hip: where(J.hip.bone), chest: where(J.spineTop.bone), head: where(J.head.bone), nose: where(marks.nose.bone, marks.nose.local),
-      tailMid: where(J.tail[2].bone), tailTip: where(marks.tailTip.bone, marks.tailTip.local),
+      tailBase: where(J.tail[1].bone), tailMid: where(J.tail[3].bone), tailTip: where(marks.tailTip.bone, marks.tailTip.local),
       feet: G.feet.map((f) => ({ p: where(f.L.ball.bone), planted: f.planted, gx: f.gx, side: f.L.side })),
     };
   }
