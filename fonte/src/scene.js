@@ -247,7 +247,7 @@ export function createScene(canvas, tier) {
   // brilho de contorno (contraluz na pelagem), mais forte nas bordas viradas para cima
   const rim = { value: new THREE.Color(0.8, 0.9, 1.0) };
   // filamentos: as pontas das penas cedem ao movimento do corpo e a uma brisa leve
-  const fur = { uSw: { value: [0, 1, 2, 3, 4].map(() => new THREE.Vector3()) }, uSx: { value: [0, 0.25, 0.5, 0.75, 1] }, uPat: { value: null }, uFill: { value: 1 } };
+  const fur = { uSw: { value: [0, 1, 2, 3, 4].map(() => new THREE.Vector3()) }, uSx: { value: [0, 0.25, 0.5, 0.75, 1] }, uPat: { value: null }, uFill: { value: 1 }, uGrav: { value: new THREE.Vector3() } };
   // nível de detalhe da plumagem: com o dino pequeno na tela desenha menos tufos (os longos ficam sempre) e os que
   // ficam ganham um pouco mais de opacidade. Os tufos são embaralhados no carregamento para o recorte ser uniforme.
   const furLod = { tris: 0, keep: 0, frac: 1, force: null };
@@ -263,18 +263,19 @@ export function createScene(canvas, tier) {
         .replace('#include <common>', '#include <common>\nuniform vec3 uRim;')
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
           float rimF = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.4);
-          totalEmissiveRadiance += uRim * rimF * (0.3 + 0.7 * saturate(normal.y)) * (0.35 + 0.65 * diffuseColor.r);`);
+          totalEmissiveRadiance += uRim * rimF * (0.3 + 0.7 * saturate(normal.y)) * (0.35 + 0.65 * diffuseColor.r) * ${isFeather ? '0.55' : '1.0'};`);
       if (!isFeather) return;
       Object.assign(sh.uniforms, fur);
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute float aTip;\nattribute float aSeed;\nattribute vec3 aPat;\nvarying vec3 vPat;\nuniform vec3 uSw[5];\nuniform float uSx[5];')
+        .replace('#include <common>', '#include <common>\nattribute float aTip;\nattribute float aSeed;\nattribute vec3 aPat;\nvarying vec3 vPat;\nuniform vec3 uSw[5];\nuniform float uSx[5];\nuniform vec3 uGrav;')
         .replace('#include <skinning_vertex>', `#include <skinning_vertex>
           vPat = aPat;
           // cada filamento cede para onde a sua região do corpo "ficou para trás" (cabeça, peito, quadril, cauda);
           // a base não sai do lugar, a ponta cede mais, e cada tufo cede um pouco diferente do vizinho
           vec3 sw = uSw[0];
           for (int i = 0; i < 4; i++) sw = mix(sw, uSw[i + 1], smoothstep(uSx[i], uSx[i + 1], aPat.y));
-          transformed += sw * min(aTip * aTip, 1.6) * (0.7 + 0.6 * aSeed);`);
+          transformed += sw * min(aTip * aTip, 1.6) * (0.7 + 0.6 * aSeed);
+          transformed += uGrav * min(aTip * aTip, 1.6) * (0.6 + 0.8 * aSeed);   // as pontas cedem um pouco ao próprio peso`);
       if (!fur.uPat.value) return;
       const rows = PAT.ny / PAT.cols;
       sh.fragmentShader = sh.fragmentShader
@@ -293,6 +294,8 @@ export function createScene(canvas, tier) {
           diffuseColor.rgb *= patAt(vPat);
           #ifdef USE_MAP
             diffuseColor.a = min(1.0, diffuseColor.a * uFill * (1.0 + 0.38 * max(0.0, log2(length(fwidth(vMapUv)) * 1024.0))));
+            // a ponta de cada tufo some aos poucos (antes o corte de transparência a quebrava em lascas soltas)
+            diffuseColor.a *= 1.0 - 0.9 * smoothstep(0.72, 0.97, fract(vMapUv.y));
           #endif`);
     };
     mat.customProgramCacheKey = () => (isFeather ? 'dino-fur' : 'dino-skin');
@@ -385,6 +388,7 @@ export function createScene(canvas, tier) {
       // filamentos: o empurrão vem no espaço do dino e o shader trabalha no espaço da malha
       if (feather) {
         _m3.setFromMatrix4(_m4.copy(feather.matrixWorld).invert().multiply(dino.matrixWorld));
+        fur.uGrav.value.set(0, -0.012, 0).applyMatrix3(_m3);
         rig.fur.forEach((f, i) => { fur.uSw.value[i].copy(f.out).applyMatrix3(_m3); fur.uSx.value[i] = furFit.a + furFit.b * f.x; });
       }
     }
@@ -459,13 +463,14 @@ export function createScene(canvas, tier) {
         o.material.emissiveMap = null; o.material.emissive.setScalar(0);
         shuffleCards(g);
         // filamentos recortados (não translúcidos): gravam profundidade, então se ordenam direito e pesam menos
-        o.material.transparent = false; o.material.depthWrite = true; o.material.alphaTest = 0.32; o.material.alphaToCoverage = true;
+        o.material.transparent = false; o.material.depthWrite = true; o.material.alphaTest = 0.16; o.material.alphaToCoverage = true;   // corte baixo + cobertura: pontas macias, sem lascas soltas
         o.material.side = THREE.DoubleSide;
       }
       const isEye = /Eye/i.test(o.material.name);
       // penas foscas (pelagem não brilha); pele um pouco mais lisa. Sombras próprias só valem no nível alto.
-      o.material.roughness = isFeather ? 0.92 : isEye ? 0.08 : 0.68;   // olhos lisos e úmidos
-      o.material.envMapIntensity = isFeather ? 0.6 : isEye ? 2.2 : 1;
+      o.material.roughness = isFeather ? 1 : isEye ? 0.08 : 0.68;   // olhos lisos e úmidos; plumagem fosca
+      o.material.envMapIntensity = isFeather ? 0.42 : isEye ? 2.2 : 1;
+      if (isFeather) o.material.color.setScalar(0.93);              // o branco da plumagem estourava sob a luz principal
       o.castShadow = !isFeather; o.receiveShadow = true;
       dress(o.material, isFeather);
     });

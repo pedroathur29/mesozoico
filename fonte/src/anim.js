@@ -86,9 +86,9 @@ const strideLength = (v) => lerp(1.35, 2.25, clamp(v / 2.3, 0, 1));   // passada
 const ARM = { upper: -0.25, lower: 0.8, wrist: -0.4, tuck: 0, inward: 0.18, curl: [0.4, 0.55, 0.62], spread: 0.1 };
 
 // ações espontâneas (só parado): nome -> duração base em s
-const ACTIONS = { look: 4.6, glance: 1.9, sniffGround: 6.6, sniffAir: 3.8, step: 1.0, settle: 3.4, swish: 2.6, yawn: 3.6 };
+const ACTIONS = { look: 4.6, glance: 1.9, sniffGround: 7.4, sniffAir: 3.8, step: 1.0, settle: 3.4, swish: 2.6, yawn: 3.6, listen: 4.4 };
 // "saco" de 16 ações, embaralhado de novo a cada rodada: observar e farejar aparecem mais; o bocejo, uma vez por rodada
-const PICK = ['look', 'look', 'look', 'glance', 'glance', 'sniffGround', 'sniffGround', 'sniffGround', 'sniffAir', 'sniffAir', 'step', 'step', 'settle', 'settle', 'swish', 'yawn'];
+const PICK = ['look', 'look', 'listen', 'listen', 'glance', 'glance', 'sniffGround', 'sniffGround', 'sniffAir', 'step', 'step', 'settle', 'settle', 'swish', 'yawn'];
 
 export function createRig(wrap) {
   wrap.updateMatrixWorld(true);
@@ -310,7 +310,7 @@ export function createRig(wrap) {
     fy: [0, 0, 0, 0, 0, 0], fr: [0, 0, 0, 0, 0, 0], fp: [0, 0, 0, 0, 0, 0],                  // cadeias de atraso do tronco à cabeça (giro, rolagem, inclinação)
     tz: [0, 0, 0, 0, 0, 0, 0], ty: [0, 0, 0, 0, 0, 0, 0],                                    // cauda: deslocamento atrasado de cada articulação (lado, altura)
     gazeY: 0, gazeP: 0, gate: 0, actK: null,
-    bph: 0, effort: 0, ti: 0, tj: 0, rest: 0, nz: 0, ny: 0,                                                                       // respiração: fase (ciclos) e esforço recente
+    bph: 0, effort: 0, ti: 0, tj: 0, rest: 0, nz: 0, ny: 0, hush: 0,                                                                       // respiração: fase (ciclos) e esforço recente
   };
   // z < 1: a mola passa um pouco do alvo e assenta (é o que dá a sensação de massa); z = 1: chega sem passar
   function spring(key, target, w, dt, z = 1) {
@@ -432,7 +432,7 @@ export function createRig(wrap) {
     // ---------- ação espontânea ----------
     // Só começa uma ação com ele já parado há um instante, e nunca "entra pelo meio" de uma em andamento.
     // Se ele volta a andar durante a ação, ela se desfaz aos poucos (gate), sem corte seco.
-    const A = { yaw: 0, pitch: 0, tilt: 0, jaw: 0, lid: 0, swish: 0, dy: 0, dz: 0, roll: 0, down: 0, sniff: 0, eye: 0 };
+    const A = { yaw: 0, pitch: 0, tilt: 0, jaw: 0, lid: 0, swish: 0, dy: 0, dz: 0, roll: 0, down: 0, sniff: 0, eye: 0, hyaw: 0, nyaw: 0, still: 0 };
     const open = calm > 0.4 && G.stillT > 1.0;
     if (dt > 0) S.gate = lag(S.gate, open ? 1 : 0, 0.3, dt); else if (o.snap) S.gate = open ? 1 : 0;
     let act = actionAt(t);
@@ -452,11 +452,25 @@ export function createRig(wrap) {
         A.yaw = side * 0.2 * p * k; A.tilt = -side * 0.03 * p * k; A.eye = side * smooth(0, 0.12, u) * (1 - smooth(0.5, 0.7, u)) * k;
       } else if (id === 'sniffGround') {
         // fareja o chão: baixa a cabeça, aspira em rajadas curtas varrendo de um lado para o outro e ergue de novo
-        A.down = pulse(u, 0.27, 0.75) * k;
-        A.sniff = smooth(0.22, 0.32, u) * (1 - smooth(0.66, 0.76, u)) * k;
-        A.yaw = side * 0.15 * Math.sin((u - 0.27) * 10) * A.sniff;
-        // a boca entreabre por um instante no meio e, ao erguer a cabeça, dá duas mexidas curtas (como quem engole)
-        A.jaw = (0.17 * smooth(0.46, 0.5, u) * (1 - smooth(0.55, 0.61, u)) + 0.1 * bump(u, 0.83, 0.022) + 0.07 * bump(u, 0.9, 0.018)) * k;
+        // ... e então PARA, como quem percebeu alguma coisa: a cabeça fica imóvel e sobe um pouco, os olhos piscam;
+        // só depois ela se ergue, devagar
+        A.down = smooth(0, 0.26, u) * (1 - smooth(0.7, 0.93, u)) * k;
+        A.sniff = smooth(0.2, 0.28, u) * (1 - smooth(0.5, 0.56, u)) * k;
+        A.yaw = side * 0.15 * Math.sin((u - 0.26) * 10) * A.sniff;
+        A.pitch = 0.07 * smooth(0.54, 0.61, u) * (1 - smooth(0.66, 0.76, u)) * k;
+        A.still = smooth(0.52, 0.58, u) * (1 - smooth(0.68, 0.74, u)) * k;
+        A.lid = bump(u, 0.6, 0.012) * k;
+        // a boca entreabre por um instante na pausa e, ao erguer a cabeça, dá duas mexidas curtas (como quem engole)
+        A.jaw = (0.15 * smooth(0.58, 0.61, u) * (1 - smooth(0.64, 0.68, u)) + 0.1 * bump(u, 0.88, 0.02) + 0.07 * bump(u, 0.94, 0.016)) * k;
+      } else if (id === 'listen') {
+        // reage a um som: os olhos e a cabeça se voltam primeiro, rápido; o pescoço vem depois; o corpo quase não se
+        // mexe. Ele fica atento um instante, com a cabeça um pouco inclinada, e volta devagar.
+        const hp = smooth(0.02, 0.1, u) * (1 - smooth(0.72, 0.88, u)), np = smooth(0.08, 0.28, u) * (1 - smooth(0.76, 0.95, u));
+        A.hyaw = side * 0.3 * hp * k; A.nyaw = side * 0.3 * np * k;
+        A.tilt = side * 0.08 * hp * smooth(0.2, 0.35, u) * k; A.pitch = 0.05 * np * k;
+        A.eye = side * smooth(0, 0.04, u) * (1 - smooth(0.6, 0.75, u)) * k;
+        A.still = smooth(0, 0.08, u) * (1 - smooth(0.8, 0.95, u)) * k;
+        A.lid = bump(u, 0.45, 0.012) * k;
       } else if (id === 'sniffAir') {
         const p = pulse(u, 0.26, 0.72) * k;
         A.pitch = 0.2 * p; A.yaw = side * 0.12 * p; A.sniff = smooth(0.2, 0.32, u) * (1 - smooth(0.62, 0.74, u)) * k;
@@ -474,6 +488,7 @@ export function createRig(wrap) {
         startSwing(f, clamp(xr + (hash(act.k + 5) - 0.4) * 0.3, -0.22, 0.3), 0.66, 0.13, false, f.L.home.z + (hash(act.k + 8) - 0.5) * 0.08);
       }
     }
+    if (dt > 0) S.hush = lag(S.hush, A.still, 0.25, dt); else if (o.snap) S.hush = A.still;
     // farejar: rajadas de aspirações curtas (as narinas abrem e a cabeça dá pequenos trancos), com pausas entre elas
     const snK = Math.max(sniff * idle, A.sniff);
     const snPulse = Math.max(0, Math.sin(t * 19.5)) ** 2 * smooth(-0.2, 0.5, Math.sin(t * 2.7 + 1));
@@ -484,7 +499,8 @@ export function createRig(wrap) {
     const sg = air ? air.L.side : G.lastSide, p = air ? air.p : 1, g = air ? Math.sin(Math.PI * p) : 0;
     const stepK = air && !air.walkStep ? 0.45 : wk;                 // passo no lugar também desloca o peso, menos
     // Parado: o peso fica um tempo numa perna, passa para a outra e fica de novo (não é um vai e vem contínuo).
-    const shift = (0.7 * drift(ti, 5.1, 3, 1.7) + 0.3 * drift(ti, 8.3, 13, 2.2)) * still;
+    // (atento, ao ouvir ou ao perceber um cheiro, o corpo para quase por completo)
+    const shift = (0.7 * drift(ti, 5.1, 3, 1.7) + 0.3 * drift(ti, 8.3, 13, 2.2)) * still * (1 - 0.75 * S.hush);
     // recebe o peso: logo depois de cada pouso o corpo cede um pouco e volta (o pico vem ~0,1 s depois do contato)
     const accept = wk * (G.land / 0.1) * Math.exp(1 - G.land / 0.1);
     // Peso de um lado para o outro na caminhada: o corpo vai para a perna de apoio ANTES de o outro pé sair do chão
@@ -566,10 +582,10 @@ export function createRig(wrap) {
     // o balanço lento do pescoço vem em fases: um tempo mexendo, um tempo parado
     const nod = 0.032 * wob(ti * 0.6, 2) * idle * rest + 0.008 * breath * (0.3 + 0.7 * rest);   // o aceno lento é do repouso: andando, a cabeça fica firme
     const snf = snK * 0.016 * (snPulse - 0.3);
-    rot(J.neck1, rufB * 0.04 + cR(3), gy * 0.22 + cY(3) + holdZ * 0.55 + steadyZ * 0.55, nod + gp * 0.3 + 0.13 * r - 0.46 * A.down + cP(3) + holdY * 0.55 - steadyY * 0.55);
-    rot(J.neck2, rufC * 0.05 + cR(4), gy * 0.26 + cY(4) + holdZ * 0.45 + steadyZ * 0.45, nod * 0.6 + gp * 0.3 + 0.12 * r - 0.44 * A.down + cP(4) + holdY * 0.45 - steadyY * 0.45);
-    rot(J.neckTop, dTilt * 0.3 + A.tilt * 0.4, gy * 0.2 + dYaw * 0.3, gp * 0.15 + 0.05 * r + dPitch * 0.4 - 0.2 * A.down);
-    rot(J.head, dTilt + A.tilt + growl * 0.014 + rufC * 0.07 + cR(5), gy * 0.32 + dYaw + growl * 0.012 + cY(5) - holdZ - steadyZ, gp * 0.25 + dPitch + 0.1 * r + growl * 0.006 + snf - 0.06 * A.down - pitchAct * 0.5 + cP(5) - holdY + steadyY);
+    rot(J.neck1, rufB * 0.04 + cR(3), gy * 0.22 + A.nyaw * 0.45 + cY(3) + holdZ * 0.55 + steadyZ * 0.55, nod * (1 - 0.7 * S.hush) + gp * 0.3 + 0.13 * r - 0.46 * A.down + cP(3) + holdY * 0.55 - steadyY * 0.55);
+    rot(J.neck2, rufC * 0.05 + cR(4), gy * 0.26 + A.nyaw * 0.4 + cY(4) + holdZ * 0.45 + steadyZ * 0.45, nod * 0.6 * (1 - 0.7 * S.hush) + gp * 0.3 + 0.12 * r - 0.44 * A.down + cP(4) + holdY * 0.45 - steadyY * 0.45);
+    rot(J.neckTop, dTilt * 0.3 + A.tilt * 0.4, gy * 0.2 + A.nyaw * 0.15 + A.hyaw * 0.3 + dYaw * 0.3, gp * 0.15 + 0.05 * r + dPitch * 0.4 - 0.2 * A.down);
+    rot(J.head, dTilt + A.tilt + growl * 0.014 + rufC * 0.07 + cR(5), gy * 0.32 + A.hyaw * 0.7 + dYaw * (1 - 0.6 * S.hush) + growl * 0.012 + cY(5) - holdZ - steadyZ, gp * 0.25 + dPitch + 0.1 * r + growl * 0.006 + snf - 0.06 * A.down - pitchAct * 0.5 + cP(5) - holdY + steadyY);
     // no ato 3 (fareja a pessoa) a boca entreabre por um instante a cada poucos segundos
     const sniffPart = sniff * idle * 0.15 * pulse(((t + 2) % 6.3) / 1.0, 0.3, 0.6) * (((t + 2) % 6.3) < 1.0 ? 1 : 0);
     const jawOpen = clamp(r + Math.max(A.jaw, sniffPart) * (1 - r), 0, 1);
@@ -603,9 +619,11 @@ export function createRig(wrap) {
     J.tail.forEach((j, i) => {
       const segYaw = Math.atan2(DZ(i + 1) - DZ(i), tailLen[i]), segPitch = -Math.atan2(DY(i + 1) - DY(i), tailLen[i]);
       const fall = 1 - 0.13 * i;                                                  // 1 na base, 0,35 na última
-      const slow = idle * (0.085 * wob(tj * 0.62 - i * 0.32, 31) + 0.035 * wob(tj * 0.29 - i * 0.2, 37)) * (0.08 + 0.92 * rest) * fall;
+      const slow = idle * (0.085 * wob(tj * 0.62 - i * 0.32, 31) + 0.035 * wob(tj * 0.29 - i * 0.2, 37)) * (0.08 + 0.92 * rest) * fall * (1 - 0.6 * S.hush);
+      // parado há um tempo, a cauda cede um pouco ao próprio peso e de vez em quando se ergue de novo
+      const sag = rest * (0.006 + 0.008 * (0.5 + 0.5 * drift(tj, 11.3, 61, 3.5))) * (0.5 + 0.12 * i);
       const sw = (segYaw - prevYaw) + slow + curl * fall + ruf * 0.035 * Math.sin(t * 19 - 1.5 - i * 0.8) * fall + A.swish * 0.15 * Math.sin(t * 4.2 - i * 0.45) * fall;
-      const up = (segPitch - prevPitch) + idle * 0.018 * wob(tj * 0.55 - i * 0.3, 43) * fall * (0.1 + 0.9 * rest) + 0.014 * drift(tj, 8.7, 47, 2.6) * rest * fall
+      const up = (segPitch - prevPitch) + sag + idle * 0.018 * wob(tj * 0.55 - i * 0.3, 43) * fall * (0.1 + 0.9 * rest) + 0.014 * drift(tj, 8.7, 47, 2.6) * rest * fall
         - 0.03 * r + 0.012 * sniff + 0.01 * A.swish + 0.012 * wk + 0.036 * A.down;   // ao baixar a cabeça a cauda não sobe junto: fica quase nivelada
       rot(j, i === 0 ? -S.roll * 0.6 : 0, sw, up);      // a base da cauda desfaz parte da inclinação do quadril
       prevYaw = segYaw; prevPitch = segPitch;

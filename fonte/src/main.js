@@ -282,7 +282,8 @@ function frame(now) {
   // anotações de anatomia: seguem o ponto do corpo e só aparecem no ato delas
   for (const c of callouts) {
     const a = c.act === activeAct ? gl.anchor(c.name, c.pos) : null;
-    const on = !!(a && a.visible);
+    // no celular o texto ocupa a metade de baixo: um rótulo que cairia ali some, em vez de cobrir o título
+    const on = !!(a && a.visible) && !(gl.stacked && a.y > innerHeight * 0.44);
     if (on) {
       c.el.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px)`;
       const left = a.x > innerWidth * 0.62; // perto da borda direita, o rótulo abre para a esquerda

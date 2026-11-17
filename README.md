@@ -48,13 +48,13 @@ O esqueleto **não tem** costelas, barriga nem narinas. Em vez de fingir isso co
 
 ## O que o dino faz
 - **Sempre:** respira (o tórax abre e o abdômen acompanha logo depois, com uma pausa entre os ciclos; o ritmo acelera depois de andar ou rugir), passa o peso de uma perna para a outra com os pés plantados, pisca, move os olhos em pequenos saltos e vira a cabeça para a câmera (no computador, acompanha o mouse). Cauda, pescoço e filamentos seguem o corpo com atraso.
-- **De tempos em tempos (parado):** uma ação de cada vez, sorteada de um "saco" que é embaralhado a cada rodada: observar o entorno (os olhos vão primeiro, a cabeça segue), olhar de relance, farejar o chão (baixa a cabeça até perto do solo, aspira em rajadas curtas com as narinas abrindo e ergue de novo), farejar o ar, trocar um pé de lugar, ajustar a postura, abanar a cauda e, raramente, bocejar. Entre as ações há intervalos de 1,6 a 6 s e, às vezes, uma pausa longa. A boca fica fechada no repouso e na caminhada: só abre no rugido, no bocejo e, por um instante, ao farejar.
+- **De tempos em tempos (parado):** uma ação de cada vez, sorteada de um "saco" que é embaralhado a cada rodada: observar o entorno (os olhos vão primeiro, a cabeça segue), reagir a um som (olhos e cabeça se voltam rápido, o pescoço vem depois e o corpo quase para), olhar de relance, farejar o chão (baixa o focinho, aspira em rajadas, **para** levemente erguido como quem percebeu algo e só então ergue a cabeça devagar), farejar o ar, trocar um pé de lugar, ajustar a postura, abanar a cauda e, raramente, bocejar. Entre as ações há intervalos de 1,6 a 6 s e, às vezes, uma pausa longa. A boca fica fechada no repouso e na caminhada: só abre no rugido, no bocejo e, por um instante, na pausa do farejar. Parado há um tempo, a cauda cede um pouco ao próprio peso e os filamentos pendem levemente.
 - **Abertura:** ele já aparece inteiro no quadro, um pouco atrás da marca. Dá alguns passos até o lugar e freia, enquanto a câmera se aproxima. Nada dele sai da tela.
 - **Atos 2 e 7:** anda enquanto a página rola (são os atos com intenção de deslocamento). Quando a rolagem para, ele freia, termina o passo e assenta os pés. Nos outros atos ele fica em repouso.
 - **Ato 3:** abaixa a cabeça e fareja a pessoa de 1,75 m. Uma régua no chão marca os 9 m.
-- **Ato 4:** sacode o corpo devagar, de tempos em tempos. A câmera termina no penacho da cauda.
+- **Ato 4:** sacode o corpo devagar, de tempos em tempos. A câmera vai do flanco ao dorso, com o penacho erguido ao fundo, e termina num close do penacho entrando pela borda; a cauda gira para longe do texto.
 - **Ato 5:** abre a boca aos poucos e termina rugindo de frente.
-- **Ato 6:** estende os braços e abre e fecha as garras.
+- **Ato 6:** de frente, estende os braços e abre e fecha as garras; a cauda fica atrás do corpo, longe do texto.
 
 Tudo isso é animação ilustrativa (o site diz isso no fecho), não um dado sobre o comportamento do animal.
 Com `prefers-reduced-motion`, ficam só a câmera e as poses ligadas à rolagem: sem caminhada, sem entrada e sem "vida própria".
@@ -95,7 +95,7 @@ A imagem de *Jurassic World Evolution 3* enviada pelo autor serviu só de guia d
 ## Cena (`fonte/src/scene.js`)
 - **Terreno:** disco de solo com textura gerada por código, que se esfuma nas bordas.
 - **Sombras de contato:** uma sob o tronco e uma sob cada pé, que some quando o pé levanta. No nível alto de qualidade o chão também recebe a sombra projetada do corpo.
-- **Plumagem:** filamentos recortados (não translúcidos). Não há vento: cinco pontos do corpo (cabeça, peito, quadril, meio e ponta da cauda) têm cada um um "seguidor" preso por uma mola frouxa; quando o corpo se mexe, os filamentos daquela região ficam para trás, passam um pouco do ponto e assentam. Parado o corpo, a plumagem para. De longe os cartões ficam mais cheios, para a pelagem não virar chuvisco.
+- **Plumagem:** filamentos recortados (não translúcidos), com a ponta de cada tufo sumindo aos poucos (antes o corte a quebrava em lascas soltas) e brilho contido (fosca, contorno de luz mais fraco). Não há vento: cinco pontos do corpo (cabeça, peito, quadril, meio e ponta da cauda) têm cada um um "seguidor" preso por uma mola frouxa; quando o corpo se mexe, os filamentos daquela região ficam para trás, passam um pouco do ponto e assentam. Parado o corpo, a plumagem para. De longe os cartões ficam mais cheios, para a pelagem não virar chuvisco.
 - **Coníferas:** silhuetas ao fundo, quase da cor do fundo. Só aparecem as que estão atrás do dino, e a intensidade vem do keyframe `flora` (nada na abertura, tudo no ato 7).
 - **Layout:** em celulares, tablets em pé e janelas quase quadradas (proporção abaixo de 1,45) o texto vai para baixo e o dino para cima. O mesmo critério está no CSS e na cena.
 
