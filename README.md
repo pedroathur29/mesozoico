@@ -108,6 +108,13 @@ O que travava, medido com o perfil de quadros (`?debug`, `window.__prof`):
 - **Fora do quadro:** se a câmera perde o dino de vista, o desenho pausa (a animação segue, para não haver salto na volta). Com a aba em segundo plano, tudo pausa.
 - O granulado da tela cobria quatro vezes a área visível; agora cobre só a tela.
 
+## Texto e design
+- **Título da abertura:** fica como fundo, em tom discreto, para o dino branco se destacar na frente dele.
+- **Menu:** seis capítulos (Corpo, Escala, Penas, Cabeça, Braços, Habitat), com sublinhado no atual (`aria-current`). As bolinhas laterais são atalhos clicáveis para mouse e toque. Há um link "Ir para o conteúdo" para teclado.
+- **Saltos entre capítulos:** a duração cresce com a distância e a curva abre e fecha devagar, para a câmera não atravessar vários capítulos de uma vez.
+- **Sem JavaScript ou sem WebGL:** a tela de carregamento sai e o texto aparece sozinho, em coluna legível, sem a cena 3D.
+- **Textos:** números e unidades não se separam na quebra de linha; nomes científicos em itálico; o selo "estimativa" fica ao lado do dado, não depois do ponto final; título do ato 7 coerente com o texto ("temperado a frio"); fecho dividido em três parágrafos curtos, com link para a licença CC BY.
+
 ## Como conferir (`fonte/tools/check/`)
 Três testes medem o que não dá para ver numa captura. Precisam do Playwright e do site servido (`npm run build && npm run preview -- --port 4173`).
 ```bash

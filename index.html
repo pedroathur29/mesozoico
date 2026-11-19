@@ -6,12 +6,19 @@
   <title>Yutyrannus huali — o tirano emplumado</title>
   <meta name="description" content="Um passeio em 3D pelo Yutyrannus huali, o grande tiranossauroide emplumado do Cretáceo Inferior da China.">
   <meta name="theme-color" content="#0a141d">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Yutyrannus huali — o tirano emplumado">
+  <meta property="og:description" content="Um passeio em 3D pelo Yutyrannus huali, o grande tiranossauroide emplumado do Cretáceo Inferior da China.">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <script type="module" crossorigin src="./assets/index-BLG7xSEP.js"></script>
+  <!-- sem JavaScript não há cena 3D: a tela de carregamento sairia da frente do texto -->
+  <noscript><style>#loader{display:none}</style></noscript>
+  <script type="module" crossorigin src="./assets/index-CpKMx1eq.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/three-hZQG32Mv.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-BRl_7hbg.css">
+  <link rel="stylesheet" crossorigin href="./assets/index-BiF-BUU4.css">
 </head>
 <body>
+  <a class="skip" href="#story">Ir para o conteúdo</a>
   <!-- Loading: some quando a cena 3D estiver pronta -->
   <div id="loader" role="status" aria-live="polite">
     <div class="loader__inner">
@@ -39,10 +46,12 @@
 
   <header class="top">
     <a class="top__brand" href="#ato-1">Yutyrannus</a>
-    <nav class="top__nav" aria-label="Atos">
+    <nav class="top__nav" aria-label="Capítulos">
       <a href="#ato-2" data-nav="2">Corpo</a>
+      <a href="#ato-3" data-nav="3">Escala</a>
       <a href="#ato-4" data-nav="4">Penas</a>
       <a href="#ato-5" data-nav="5">Cabeça</a>
+      <a href="#ato-6" data-nav="6">Braços</a>
       <a href="#ato-7" data-nav="7">Habitat</a>
     </nav>
     <span class="top__era">125 Ma</span>
@@ -54,8 +63,9 @@
     <h1><span>Yutyr</span><span class="acc">annus</span></h1>
   </div>
 
+  <!-- atalho para o mouse e o toque; quem usa teclado ou leitor de tela tem o menu do topo -->
   <ol class="dots" aria-hidden="true">
-    <li data-dot="1"></li><li data-dot="2"></li><li data-dot="3"></li><li data-dot="4"></li><li data-dot="5"></li><li data-dot="6"></li><li data-dot="7"></li>
+    <li data-dot="1"><a href="#ato-1" tabindex="-1" title="Abertura"></a></li><li data-dot="2"><a href="#ato-2" tabindex="-1" title="Corpo"></a></li><li data-dot="3"><a href="#ato-3" tabindex="-1" title="Escala"></a></li><li data-dot="4"><a href="#ato-4" tabindex="-1" title="Penas"></a></li><li data-dot="5"><a href="#ato-5" tabindex="-1" title="Cabeça"></a></li><li data-dot="6"><a href="#ato-6" tabindex="-1" title="Braços"></a></li><li data-dot="7"><a href="#ato-7" tabindex="-1" title="Habitat"></a></li>
   </ol>
 
   <main id="story">
@@ -64,7 +74,7 @@
       <h1 class="sr-only">Yutyrannus</h1>
       <div class="copy copy--left copy--hero">
         <p class="lead" data-reveal>O tirano emplumado.</p>
-        <p class="hint" data-reveal>Role para começar <i></i></p>
+        <p class="hint" data-reveal>Role para explorar <i></i></p>
       </div>
     </section>
 
@@ -74,8 +84,8 @@
         <p class="kicker" data-reveal>Ato 2 · O corpo</p>
         <p class="num" data-reveal><span data-count="9">9</span><small>m</small></p>
         <h2 data-reveal>Um predador de nove metros.</h2>
-        <p data-reveal>Os maiores exemplares conhecidos chegavam a cerca de 9 m de comprimento e uns 1,4 t. Esses números são <b class="est">estimativas</b> feitas a partir de três esqueletos quase completos.</p>
-        <p class="meta" data-reveal>Yutyrannus huali · "tirano emplumado" + "belo" (mandarim)</p>
+        <p data-reveal>Os maiores exemplares conhecidos chegavam a cerca de 9&nbsp;m de comprimento e uns 1,4&nbsp;t. Esses números são <b class="est">estimativas</b> feitas a partir de três esqueletos quase completos.</p>
+        <p class="meta" data-reveal><i>Yutyrannus huali</i>: “tirano emplumado” e “belo” (do mandarim)</p>
       </div>
     </section>
 
@@ -85,7 +95,7 @@
         <p class="kicker" data-reveal>Ato 3 · Escala</p>
         <p class="num" data-reveal><span>5</span><small>×</small></p>
         <h2 data-reveal>Cinco vezes o comprimento de uma pessoa.</h2>
-        <p data-reveal>Ao lado de um humano de 1,75 m, o animal inteiro seria mais de cinco vezes mais comprido. Mesmo assim, era bem menor que o <i>Tyrannosaurus rex</i>, de uns 12 m, que viveu mais de 55 milhões de anos depois <b class="est">estimativa</b>.</p>
+        <p data-reveal>Ao lado de uma pessoa de 1,75&nbsp;m, o animal inteiro seria mais de cinco vezes mais comprido <b class="est">estimativa</b>. Mesmo assim, era bem menor que o <i>Tyrannosaurus rex</i>, de uns 12&nbsp;m, que só apareceria mais de 55&nbsp;milhões de anos depois.</p>
       </div>
     </section>
 
@@ -95,7 +105,7 @@
         <p class="kicker" data-reveal>Ato 4 · As penas</p>
         <p class="num" data-reveal><span>~20</span><small>cm</small></p>
         <h2 data-reveal>Filamentos, não penas de voo.</h2>
-        <p data-reveal>Os fósseis preservam filamentos longos e simples, sem barbas, com cerca de 15 a 20 cm nos trechos preservados. Foi a primeira evidência direta de um tiranossauroide grande e emplumado. Para que serviam (isolamento térmico, exibição ou os dois) <b class="est">ainda é debatido</b>, e a cor é desconhecida.</p>
+        <p data-reveal>Os fósseis preservam filamentos longos e simples, sem barbas, com cerca de 15 a 20&nbsp;cm nos trechos preservados. Foi a primeira evidência direta de um tiranossauroide grande e emplumado. Para que serviam (isolamento térmico, exibição ou ambos) <b class="est">ainda é debatido</b>. A cor do animal é desconhecida.</p>
       </div>
     </section>
 
@@ -115,7 +125,7 @@
         <p class="kicker" data-reveal>Ato 6 · Braços e garras</p>
         <p class="num" data-reveal><span>3</span><small>dedos</small></p>
         <h2 data-reveal>Braços curtos, mão de três dedos.</h2>
-        <p data-reveal>O <i>Yutyrannus</i> ainda tinha três dedos em cada mão. Os tiranossauros que vieram depois, como o T. rex, ficaram com apenas dois.</p>
+        <p data-reveal>O <i>Yutyrannus</i> ainda tinha três dedos em cada mão. Os tiranossauros que vieram depois, como o <i>T. rex</i>, ficaram com apenas dois.</p>
       </div>
     </section>
 
@@ -124,8 +134,8 @@
       <div class="copy copy--right">
         <p class="kicker" data-reveal>Ato 7 · O mundo dele</p>
         <p class="num" data-reveal><span>125</span><small>Ma</small></p>
-        <h2 data-reveal>Florestas de coníferas e um clima frio.</h2>
-        <p data-reveal>Os três esqueletos são atribuídos à Formação Yixian, em Liaoning, nordeste da China, com cerca de 125 milhões de anos. O clima era temperado a frio para a época, o que combina com um animal coberto de filamentos. A temperatura média exata <b class="est">é incerta</b>.</p>
+        <h2 data-reveal>Florestas de coníferas, clima temperado a frio.</h2>
+        <p data-reveal>Os três esqueletos são atribuídos à Formação Yixian, em Liaoning, nordeste da China, com cerca de 125&nbsp;milhões de anos. O clima era temperado a frio para a época, o que combina com um animal coberto de filamentos. A temperatura média exata <b class="est">é incerta</b>.</p>
       </div>
       <!-- linha do tempo do Mesozoico (larguras proporcionais à duração de cada período) -->
       <div class="timeline" role="img" aria-label="Linha do tempo do Mesozoico: Triássico, de 252 a 201 milhões de anos atrás; Jurássico, de 201 a 143; Cretáceo, de 143 a 66. O Yutyrannus viveu há cerca de 125 milhões de anos. O Tyrannosaurus rex, entre 68 e 66.">
@@ -144,8 +154,9 @@
     <footer class="outro">
       <p class="kicker">Fontes e créditos</p>
       <p>Base científica: Xu, X. et al. (2012). <i>A gigantic feathered dinosaur from the Lower Cretaceous of China</i>. Nature 484: 92–95. <a href="https://doi.org/10.1038/nature10906">doi:10.1038/nature10906</a></p>
-      <p>Modelo 3D adaptado de <a href="https://sketchfab.com/3d-models/yutyrannus-70659842d57949e8bbe3a4db1bbd365d">“Yutyrannus”, de Tim</a> (Sketchfab, CC BY). A cor branca e as faixas são escolhas artísticas: a cor real do animal é desconhecida. Os movimentos e o cenário também são ilustrativos, não um registro de comportamento. Valores marcados como estimativa vêm de reconstruções, não de medidas diretas.</p>
-      <p><a class="outro__back" href="#ato-1">Voltar ao início ↑</a></p>
+      <p>Modelo 3D adaptado de <a href="https://sketchfab.com/3d-models/yutyrannus-70659842d57949e8bbe3a4db1bbd365d">“Yutyrannus”, de Tim</a> (Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br">CC BY</a>).</p>
+      <p>A cor branca e as faixas são escolhas artísticas: a cor real do animal é desconhecida. O movimento e o cenário também são ilustrativos, não um registro de comportamento. Os valores marcados como estimativa vêm de reconstruções, não de medidas diretas.</p>
+      <p><a class="outro__back" href="#ato-1">Voltar ao início</a></p>
     </footer>
   </main>
 

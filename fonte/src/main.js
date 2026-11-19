@@ -30,7 +30,15 @@ document.fonts.ready.then(() => setTask('fonts', 1));
 
 /* ---------- cena ---------- */
 const { tier, locked } = initialTier();
-const gl = createScene($('#gl'), tier);
+// Sem WebGL (aparelho antigo, aceleração desligada) a cena não nasce: em vez de deixar a tela de carregamento
+// presa para sempre, mostramos só o texto, sem a cena 3D nem as animações de entrada.
+let gl;
+try { gl = createScene($('#gl'), tier); } catch (e) {
+  document.documentElement.classList.remove('js'); document.documentElement.classList.add('no-gl');
+  document.body.classList.remove('is-loading'); $('#loader').remove();
+  console.warn('WebGL indisponível, mostrando só o texto:', e);
+  throw e;
+}
 const DEBUG = new URLSearchParams(location.search).has('debug');
 if (DEBUG) window.__gl = gl; // ?debug expõe a cena no console
 const monitor = new QualityMonitor(tier, locked, (p) => gl.setPixelRatio(p), () => gl.dropFeathers());
@@ -196,7 +204,7 @@ function setupReveals() {
         if (!self.isActive) return;
         activeAct = n;
         dots.forEach((d) => d.classList.toggle('is-on', +d.dataset.dot === n));
-        navs.forEach((a) => a.classList.toggle('is-on', +a.dataset.nav === n));
+        navs.forEach((a) => { const on = +a.dataset.nav === n; a.classList.toggle('is-on', on); on ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'); });
         showGhost(n);
       },
     });
@@ -245,6 +253,7 @@ function frame(now) {
   const dt = loop.lastT ? Math.min(0.05, (now - loop.lastT) / 1000) : 1 / 60;
   loop.lastT = now;
   const y = lenis ? lenis.scroll : scrollY;
+  root.classList.toggle('has-scrolled', y > 40);          // some com a dica "role para explorar"
   const dy = loop.lastY === null ? 0 : Math.abs(y - loop.lastY);
   loop.lastY = y;
   loop.scrollV += (Math.min(dy / dt, 6000) - loop.scrollV) * (1 - Math.exp(-dt * 9));
@@ -340,5 +349,9 @@ const t0 = performance.now();
 addEventListener('resize', () => { gl.resize(); ScrollTrigger.refresh(); });
 $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
   const t = $(a.getAttribute('href')); if (!t) return;
-  e.preventDefault(); lenis ? lenis.scrollTo(t, { duration: 1.6 }) : t.scrollIntoView();
+  e.preventDefault();
+  // salto entre capítulos: a duração cresce com a distância (e a curva abre e fecha devagar), para a câmera
+  // não atravessar quatro capítulos num só relance
+  const dist = Math.abs(t.getBoundingClientRect().top);
+  lenis ? lenis.scrollTo(t, { duration: Math.min(3.2, 1.1 + dist / 5200), easing: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2) }) : t.scrollIntoView();
 }));
