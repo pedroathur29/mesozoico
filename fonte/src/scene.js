@@ -295,7 +295,8 @@ export function createScene(canvas, tier) {
           #ifdef USE_MAP
             diffuseColor.a = min(1.0, diffuseColor.a * uFill * (1.0 + 0.38 * max(0.0, log2(length(fwidth(vMapUv)) * 1024.0))));
             // a ponta de cada tufo some aos poucos (antes o corte de transparência a quebrava em lascas soltas)
-            diffuseColor.a *= 1.0 - 0.9 * smoothstep(0.72, 0.97, fract(vMapUv.y));
+            diffuseColor.a *= 1.0 - 0.45 * smoothstep(0.8, 0.98, fract(vMapUv.y));
+            diffuseColor.a = clamp(diffuseColor.a * 1.9, 0.0, 1.0);   // fios mais cheios: o fundo não aparece entre eles
           #endif`);
     };
     mat.customProgramCacheKey = () => (isFeather ? 'dino-fur' : 'dino-skin');
