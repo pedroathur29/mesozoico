@@ -263,7 +263,7 @@ export function createScene(canvas, tier) {
         .replace('#include <common>', '#include <common>\nuniform vec3 uRim;')
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
           float rimF = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.4);
-          totalEmissiveRadiance += uRim * rimF * (0.3 + 0.7 * saturate(normal.y)) * (0.35 + 0.65 * diffuseColor.r) * ${isFeather ? '0.55' : '1.0'};`);
+          totalEmissiveRadiance += uRim * rimF * (0.3 + 0.7 * saturate(normal.y)) * (0.35 + 0.65 * diffuseColor.r);`);
       if (!isFeather) return;
       Object.assign(sh.uniforms, fur);
       sh.vertexShader = sh.vertexShader
@@ -469,9 +469,8 @@ export function createScene(canvas, tier) {
       }
       const isEye = /Eye/i.test(o.material.name);
       // penas foscas (pelagem não brilha); pele um pouco mais lisa. Sombras próprias só valem no nível alto.
-      o.material.roughness = isFeather ? 1 : isEye ? 0.08 : 0.68;   // olhos lisos e úmidos; plumagem fosca
-      o.material.envMapIntensity = isFeather ? 0.42 : isEye ? 2.2 : 1;
-      if (isFeather) o.material.color.setScalar(0.93);              // o branco da plumagem estourava sob a luz principal
+      o.material.roughness = isFeather ? 0.92 : isEye ? 0.08 : 0.68;   // olhos lisos e úmidos
+      o.material.envMapIntensity = isFeather ? 0.6 : isEye ? 2.2 : 1;
       o.castShadow = !isFeather; o.receiveShadow = true;
       dress(o.material, isFeather);
     });
