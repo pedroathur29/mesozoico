@@ -322,7 +322,9 @@ export function createScene(canvas, tier) {
     resize();
   }
   // ajuste fino em tempo real: só a resolução (não recompila nada)
-  function setPixelRatio(p) { if (Math.abs(renderer.getPixelRatio() - p) > 0.01) { renderer.setPixelRatio(p); resize(); } }
+  // Mudar a resolução limpa o canvas. Como isso acontecia depois do desenho do quadro, o navegador mostrava um quadro
+  // em branco (e o título de trás aparecia sem o dino). Agora o quadro é redesenhado na hora.
+  function setPixelRatio(p) { if (Math.abs(renderer.getPixelRatio() - p) > 0.01) { renderer.setPixelRatio(p); resize(); renderer.render(scene, camera); } }
   function dropFeathers() { state.noFeathers = true; if (feather) feather.visible = false; }
 
   // Compila todos os materiais antes de a página aparecer, com tudo visível (coníferas, pessoa, régua, plumagem,

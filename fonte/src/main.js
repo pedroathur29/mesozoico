@@ -17,11 +17,14 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 /* ---------- loading: progresso real por tarefas ---------- */
 const loader = { num: $('#loader-num'), bar: $('#loader-bar'), el: $('#loader'), target: 0, shown: 0 };
-const tasks = { fonts: 0, scene: 0, model: 0 };
-const setTask = (k, v) => { tasks[k] = v; loader.target = (tasks.fonts + tasks.scene + tasks.model) / 3; };
+// O progresso inclui a compilação dos materiais (a etapa mais demorada depois do modelo): o contador só chega a 100%
+// quando a página realmente pode aparecer, e nunca passa disso.
+const tasks = { fonts: 0, scene: 0, model: 0, compile: 0 };
+const setTask = (k, v) => { tasks[k] = v; loader.target = (tasks.fonts + tasks.scene + tasks.model * 1.5 + tasks.compile * 1.5) / 5; };
 (function paintLoader() {
-  loader.shown += (loader.target - loader.shown) * 0.12;
-  const pct = Math.round(loader.shown * 100);
+  loader.shown = Math.min(1, loader.shown + (loader.target - loader.shown) * 0.12);
+  if (loader.target >= 1 && loader.shown > 0.995) loader.shown = 1;
+  const pct = Math.min(100, Math.round(loader.shown * 100));
   loader.num.textContent = pct; loader.bar.style.width = pct + '%';
   if (!loader.done) requestAnimationFrame(paintLoader);
 })();
@@ -329,24 +332,28 @@ async function start() {
   // posiciona câmera e dino como no primeiro quadro e compila tudo enquanto o loading ainda cobre a tela
   gl.apply(stateAt(scrollY), performance.now(), 0, { speed: 0, idle: loop.idle, enter: 0, snap: true });
   await gl.warm();
+  setTask('compile', 1);
+  // deixa o contador chegar a 100% de verdade antes de abrir a cortina (no máximo 1 s)
+  for (let i = 0; i < 60 && loader.shown < 1; i++) await new Promise((r) => requestAnimationFrame(r));
   gsap.ticker.add((_, __, ___, ____) => frame(performance.now()));
+  frame(performance.now());                 // primeiro quadro já desenhado antes de a cortina subir: nunca aparece só o fundo
   loader.done = true;
   loader.el.classList.add('is-done');
   document.body.classList.remove('is-loading');
   if (lenis) lenis.start();
-  playIntro();
+  setTimeout(playIntro, 450);                // a entrada do dino começa quando a cortina já saiu
   const hash = location.hash && $(location.hash);
   if (hash) lenis ? lenis.scrollTo(hash, { immediate: true }) : hash.scrollIntoView();
 }
 
-// espera o loading chegar a 100% (e um mínimo para a tela não piscar)
+// espera fontes, cena e modelo (a compilação vem depois, dentro de start) e um mínimo para a tela não piscar
 const t0 = performance.now();
 (function wait() {
-  if (loader.target >= 0.999 && performance.now() - t0 > 700) { loader.target = 1; setTimeout(start, 350); }
+  if (tasks.fonts && tasks.scene && tasks.model && performance.now() - t0 > 700) setTimeout(start, 150);
   else requestAnimationFrame(wait);
 })();
 
-addEventListener('resize', () => { gl.resize(); ScrollTrigger.refresh(); });
+addEventListener('resize', () => { gl.resize(); gl.render(); ScrollTrigger.refresh(); });   // redesenha no mesmo instante: redimensionar limpa o canvas
 $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
   const t = $(a.getAttribute('href')); if (!t) return;
   e.preventDefault();
