@@ -54,13 +54,13 @@ export async function saveProduct(_: ProductFormState, form: FormData): Promise<
   }
 
   const files = form.getAll("newImages").filter((f): f is File => f instanceof File && f.size > 0);
-  const uploads: { data: Buffer; mimeType: string; alt: string }[] = [];
+  const uploads: { data: Uint8Array<ArrayBuffer>; mimeType: string; alt: string }[] = [];
   for (const file of files.slice(0, 10)) {
     if (file.size > MAX_IMAGE_BYTES) {
       errors.images = `"${file.name}" passa de 4 MB`;
       break;
     }
-    const buf = Buffer.from(await file.arrayBuffer());
+    const buf = new Uint8Array(await file.arrayBuffer());
     const type = sniffImageType(buf);
     if (!type) {
       errors.images = `"${file.name}" não é uma imagem JPG, PNG, WebP ou AVIF válida`;
