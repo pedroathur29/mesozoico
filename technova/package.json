@@ -16,7 +16,8 @@
     "admin:create": "node scripts/create-admin.mjs",
     "test:e2e": "node scripts/e2e.mjs",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma migrate deploy && next build"
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
+    "vitrine:build": "node vitrine/scripts/export-catalog.mjs && cd vitrine && next build && cp -r ../public/brand ../public/products ../public/og-image.png out/ && rm -rf ../../loja && cp -r out ../../loja && touch ../../loja/.nojekyll"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

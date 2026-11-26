@@ -7,9 +7,10 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Search, LoaderCircle, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 
-type Suggestion = { slug: string; name: string; image: string; finalPriceCents: number; category: string };
 
-export function SearchBar({ className = "" }: { className?: string }) {
+export type Suggestion = { slug: string; name: string; image: string; finalPriceCents: number; category: string };
+
+export function SearchBar({ className = "", localSearch }: { className?: string; localSearch?: (q: string) => Suggestion[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -25,6 +26,10 @@ export function SearchBar({ className = "" }: { className?: string }) {
     const term = q.trim();
     if (term.length < 2) {
       setResults([]);
+      return;
+    }
+    if (localSearch) {
+      setResults(localSearch(term));
       return;
     }
     const ctrl = new AbortController();
@@ -43,7 +48,7 @@ export function SearchBar({ className = "" }: { className?: string }) {
       clearTimeout(t);
       ctrl.abort();
     };
-  }, [q]);
+  }, [q, localSearch]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
