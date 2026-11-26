@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+  <linearGradient id="wp" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f3f5f9"/><stop offset="1" stop-color="#d9dfe9"/>
+  </linearGradient>
+  <linearGradient id="wpv" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe4ec"/>
+  </linearGradient>
+  <linearGradient id="side" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#cfd6e1"/><stop offset=".3" stop-color="#f6f8fb"/><stop offset=".75" stop-color="#ffffff"/><stop offset="1" stop-color="#d3d9e3"/>
+  </linearGradient>
+  <linearGradient id="navyb" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#22365E"/><stop offset="1" stop-color="#02153F"/>
+  </linearGradient>
+  <radialGradient id="glass" cx=".38" cy=".32" r=".8">
+    <stop offset="0" stop-color="#3a4867"/><stop offset=".55" stop-color="#0d1426"/><stop offset="1" stop-color="#03060d"/>
+  </radialGradient>
+  <radialGradient id="lens" cx=".4" cy=".35" r=".75">
+    <stop offset="0" stop-color="#5b7cff"/><stop offset=".25" stop-color="#1b2a6b"/><stop offset=".6" stop-color="#070b1a"/><stop offset="1" stop-color="#000"/>
+  </radialGradient>
+  <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+    <stop offset="0" stop-color="#4D7DFD" stop-opacity=".9"/><stop offset="1" stop-color="#4D7DFD" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="warm" cx=".5" cy=".45" r=".55">
+    <stop offset="0" stop-color="#fff7e0"/><stop offset=".6" stop-color="#ffe6a8"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+  <filter id="soft2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+</defs>
+<rect width="600" height="600" fill="#F4F7FB"/>
+<circle cx="300" cy="300" r="250" fill="#ffffff"/>
+<circle cx="300" cy="300" r="250" fill="none" stroke="#E6ECF5" stroke-width="2"/><g transform="translate(24.0 24.0) scale(0.92)"><ellipse cx="300" cy="505" rx="140" ry="18" fill="#02153F" opacity="0.22" filter="url(#soft)"/>
+<rect x="170" y="150" width="260" height="330" rx="48" fill="url(#wp)" stroke="#d0d7e2" stroke-width="2"/>
+<rect x="182" y="162" width="236" height="306" rx="40" fill="none" stroke="#ffffff" stroke-width="3"/>
+<ellipse cx="300" cy="290" rx="92" ry="92" fill="#eef1f6"/>
+<ellipse cx="300" cy="286" rx="84" ry="84" fill="url(#wpv)" stroke="#d7dde7" stroke-width="2"/>
+<g stroke="#d5dbe5" stroke-width="2" fill="none">
+  <ellipse cx="300" cy="286" rx="60" ry="84"/><ellipse cx="300" cy="286" rx="30" ry="84"/>
+  <path d="M216 286 H384"/><path d="M226 246 H374"/><path d="M226 326 H374"/>
+</g>
+<ellipse cx="270" cy="250" rx="26" ry="16" fill="#fff" opacity=".8"/>
+<circle cx="300" cy="420" r="6" fill="#0153FC"/><circle cx="300" cy="420" r="14" fill="url(#glow)"/>
+</g></svg>
